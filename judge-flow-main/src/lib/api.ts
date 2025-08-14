@@ -1,6 +1,24 @@
 // API client for connecting frontend to Django backend
 const API_BASE_URL = '/api';
 
+// Get CSRF token from cookies
+function getCsrfToken() {
+  const name = 'csrftoken';
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      // Does this cookie string begin with the name we want?
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
 interface LoginData {
   username: string;
   password: string;
@@ -36,8 +54,10 @@ export const login = async (data: LoginData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -52,8 +72,10 @@ export const signup = async (data: SignupData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -68,7 +90,9 @@ export const logout = async () => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -84,6 +108,7 @@ export const getProfile = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -99,6 +124,7 @@ export const getDashboardData = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -120,6 +146,7 @@ export const getProblems = async (params?: { search?: string; tags?: string; dif
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -135,6 +162,7 @@ export const getProblem = async (id: number) => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -149,8 +177,10 @@ export const submitSolution = async (data: SubmitSolutionData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -166,6 +196,7 @@ export const getUserSubmissions = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -182,6 +213,7 @@ export const getContests = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -197,6 +229,7 @@ export const getContest = async (id: number) => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -211,8 +244,10 @@ export const submitContestSolution = async (data: any) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -228,8 +263,10 @@ export const runCode = async (data: RunCodeData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {
@@ -244,8 +281,10 @@ export const getAIReview = async (data: AIReviewData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
+    credentials: 'same-origin',
   });
   
   if (!response.ok) {

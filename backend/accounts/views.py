@@ -16,7 +16,17 @@ def user_login(request):
         username = data.get('username')
         password = data.get('password')
         
+        # Try to authenticate with username first
         user = authenticate(request, username=username, password=password)
+        
+        # If that fails, try to find a user by email
+        if user is None:
+            try:
+                user_obj = User.objects.get(email=username)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                pass
+        
         if user is not None:
             login(request, user)
             return JsonResponse({
@@ -61,16 +71,17 @@ def user_signup(request):
         })
 
 @csrf_exempt
-@login_required
 def user_logout(request):
     if request.method == 'POST':
         logout(request)
         return JsonResponse({'success': True})
 
 @csrf_exempt
-@login_required
 def user_profile(request):
     if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+        
         user = request.user
         return JsonResponse({
             'user': {
@@ -81,9 +92,11 @@ def user_profile(request):
         })
 
 @csrf_exempt
-@login_required
 def dashboard_data(request):
     if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+        
         # Get user stats
         total_submissions = Submission.objects.filter(user=request.user).count()
         accepted_submissions = Submission.objects.filter(user=request.user, status='accepted').count()

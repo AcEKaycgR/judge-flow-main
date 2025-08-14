@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -14,12 +15,93 @@ import {
   Calendar,
   ChevronRight 
 } from 'lucide-react';
-import { mockUser, mockContests } from '@/data/mockData';
+import { getProfile, getDashboardData } from '@/lib/api';
 import CountdownTimer from '@/components/common/CountdownTimer';
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+interface Stats {
+  total_submissions: number;
+  accepted_submissions: number;
+  accuracy: number;
+  total_problems: number;
+  solved_problems: number;
+}
+
+interface Contest {
+  id: string;
+  name: string;
+  start_time: string;
+}
+
 export default function Dashboard() {
-  const upcomingContest = mockContests.find(contest => contest.status === 'upcoming');
-  const accuracy = mockUser.stats.accuracy;
+  const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [upcomingContests, setUpcomingContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [profileResponse, dashboardResponse] = await Promise.all([
+          getProfile(),
+          getDashboardData(),
+        ]);
+        
+        setUser(profileResponse.user);
+        setStats(dashboardResponse.stats);
+        setUpcomingContests(dashboardResponse.upcoming_contests);
+        setError(null);
+      } catch (err) {
+        setError('Failed to fetch dashboard data');
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Error</h2>
+          <p className="text-destructive">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+            variant="outline"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show dashboard content
+  const upcomingContest = upcomingContests.length > 0 ? upcomingContests[0] : null;
+  const accuracy = stats ? stats.accuracy : 0;
   
   const quickActions = [
     {
@@ -28,7 +110,7 @@ export default function Dashboard() {
       icon: FileText,
       href: '/questions',
       color: 'bg-blue-50 text-blue-600',
-      count: '500+ problems'
+      count: stats ? `${stats.total_problems}+ problems` : '500+ problems'
     },
     {
       title: 'Playground',
@@ -44,7 +126,7 @@ export default function Dashboard() {
       icon: Trophy,
       href: '/contests',
       color: 'bg-yellow-50 text-yellow-600',
-      count: upcomingContest ? 'Next in 2 days' : 'No upcoming'
+      count: upcomingContest ? `Next in ${Math.ceil((new Date(upcomingContest.start_time).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days` : 'No upcoming'
     },
     {
       title: 'Submissions',
@@ -52,7 +134,7 @@ export default function Dashboard() {
       icon: Send,
       href: '/submissions',
       color: 'bg-purple-50 text-purple-600',
-      count: '12 recent'
+      count: stats ? `${stats.total_submissions} recent` : '12 recent'
     },
     {
       title: 'AI Review',
@@ -69,7 +151,7 @@ export default function Dashboard() {
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, {mockUser.username}! 👋
+          Welcome back, {user?.username}! 👋
         </h1>
         <p className="text-muted-foreground">
           Ready to tackle some coding challenges? Let's continue your learning journey.
@@ -192,11 +274,11 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Problems Solved</span>
                   <span className="text-sm text-muted-foreground">
-                    {mockUser.stats.solved}/{mockUser.stats.attempted}
+                    {stats ? `${stats.solved_problems}/${stats.total_problems}` : '0/0'}
                   </span>
                 </div>
                 <Progress 
-                  value={(mockUser.stats.solved / mockUser.stats.attempted) * 100} 
+                  value={stats && stats.total_problems > 0 ? (stats.solved_problems / stats.total_problems) * 100 : 0} 
                   className="h-2"
                 />
               </div>
@@ -211,12 +293,12 @@ export default function Dashboard() {
               
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-success">{mockUser.stats.solved}</div>
+                  <div className="text-2xl font-bold text-success">{stats?.solved_problems || 0}</div>
                   <div className="text-xs text-muted-foreground">Solved</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-warning">
-                    {mockUser.stats.attempted - mockUser.stats.solved}
+                    {stats ? stats.total_problems - stats.solved_problems : 0}
                   </div>
                   <div className="text-xs text-muted-foreground">Attempted</div>
                 </div>
@@ -239,21 +321,21 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <h3 className="font-semibold">{upcomingContest.title}</h3>
+                  <h3 className="font-semibold">{upcomingContest.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {upcomingContest.description}
+                    Test your skills in this upcoming competition
                   </p>
                   <CountdownTimer 
-                    targetDate={upcomingContest.startTime}
+                    targetDate={new Date(upcomingContest.start_time)}
                     className="text-primary"
                   />
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Duration:</span>
-                    <span>{upcomingContest.duration} minutes</span>
+                    <span>90 minutes</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Participants:</span>
-                    <span>{upcomingContest.participants.toLocaleString()}</span>
+                    <span>1,284</span>
                   </div>
                   <Link to="/contests">
                     <Button variant="hero" className="w-full mt-4">

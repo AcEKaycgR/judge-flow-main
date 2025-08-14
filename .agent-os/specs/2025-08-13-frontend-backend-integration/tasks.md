@@ -2,21 +2,21 @@
 
 ## Tasks
 
-- [ ] 1. Replace mock data with real API calls in Dashboard page
-  - [ ] 1.1 Write tests for dashboard data fetching
-  - [ ] 1.2 Replace mockUser data with real API call to getProfile()
-  - [ ] 1.3 Replace mockContests data with real API call to getDashboardData()
-  - [ ] 1.4 Add loading states and error handling
-  - [ ] 1.5 Verify all tests pass
+- [x] 1. Replace mock data with real API calls in Dashboard page
+  - [x] 1.1 Write tests for dashboard data fetching
+  - [x] 1.2 Replace mockUser data with real API call to getProfile()
+  - [x] 1.3 Replace mockContests data with real API call to getDashboardData()
+  - [x] 1.4 Add loading states and error handling
+  - [x] 1.5 Verify all tests pass
 
-- [ ] 2. Implement authentication flow
-  - [ ] 2.1 Write tests for login functionality
-  - [ ] 2.2 Connect Login page to backend API
-  - [ ] 2.3 Connect Signup page to backend API
-  - [ ] 2.4 Implement authentication state management
-  - [ ] 2.5 Add route protection for authenticated pages
-  - [ ] 2.6 Implement logout functionality
-  - [ ] 2.7 Verify all tests pass
+- [x] 2. Implement authentication flow
+  - [x] 2.1 Write tests for login functionality
+  - [x] 2.2 Connect Login page to backend API
+  - [x] 2.3 Connect Signup page to backend API
+  - [x] 2.4 Implement authentication state management
+  - [x] 2.5 Add route protection for authenticated pages
+  - [x] 2.6 Implement logout functionality
+  - [x] 2.7 Verify all tests pass
 
 - [ ] 3. Replace mock data in Questions page
   - [ ] 3.1 Write tests for questions data fetching

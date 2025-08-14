@@ -8,12 +8,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Code2, Eye, EyeOff, Github, Chrome, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { signup } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Signup() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -45,7 +49,7 @@ export default function Signup() {
     return 'Strong';
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -75,11 +79,31 @@ export default function Signup() {
       return;
     }
 
-    toast({
-      title: "Account created!",
-      description: "Welcome to JudgeFlow! You can now start solving problems.",
-    });
-    navigate('/');
+    setLoading(true);
+    try {
+      const response = await signup({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+      
+      // Log in the user
+      login(response.user);
+      
+      toast({
+        title: "Account created!",
+        description: "Welcome to JudgeFlow! You can now start solving problems.",
+      });
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: "Signup Failed",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialSignup = (provider: string) => {
@@ -168,6 +192,7 @@ export default function Signup() {
                     value={formData.username}
                     onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                     className="h-11"
+                    disabled={loading}
                   />
                 </div>
 
@@ -180,6 +205,7 @@ export default function Signup() {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="h-11"
+                    disabled={loading}
                   />
                 </div>
                 
@@ -193,6 +219,7 @@ export default function Signup() {
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       className="h-11 pr-10"
+                      disabled={loading}
                     />
                     <Button
                       type="button"
@@ -200,6 +227,7 @@ export default function Signup() {
                       size="icon"
                       className="absolute right-0 top-0 h-11 w-11"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -238,6 +266,7 @@ export default function Signup() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       className="h-11 pr-10"
+                      disabled={loading}
                     />
                     <Button
                       type="button"
@@ -245,6 +274,7 @@ export default function Signup() {
                       size="icon"
                       className="absolute right-0 top-0 h-11 w-11"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={loading}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -262,6 +292,7 @@ export default function Signup() {
                     onCheckedChange={(checked) => 
                       setFormData(prev => ({ ...prev, agreeToTerms: checked as boolean }))
                     }
+                    disabled={loading}
                   />
                   <Label htmlFor="terms" className="text-sm">
                     I agree to the{' '}
@@ -275,8 +306,20 @@ export default function Signup() {
                   </Label>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full h-11">
-                  Create account
+                <Button 
+                  type="submit" 
+                  variant="hero" 
+                  className="w-full h-11"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating account...
+                    </div>
+                  ) : (
+                    "Create account"
+                  )}
                 </Button>
               </form>
 
@@ -296,6 +339,7 @@ export default function Signup() {
                   variant="outline"
                   onClick={() => handleSocialSignup('GitHub')}
                   className="h-11"
+                  disabled={loading}
                 >
                   <Github className="h-4 w-4 mr-2" />
                   GitHub
@@ -304,6 +348,7 @@ export default function Signup() {
                   variant="outline"
                   onClick={() => handleSocialSignup('Google')}
                   className="h-11"
+                  disabled={loading}
                 >
                   <Chrome className="h-4 w-4 mr-2" />
                   Google

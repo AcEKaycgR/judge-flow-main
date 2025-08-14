@@ -15,8 +15,6 @@ def frontend(request):
     if os.path.exists(index_path):
         with open(index_path, 'r') as f:
             content = f.read()
-            # Replace the API base URL
-            content = content.replace('/api/', '/api/')
             return HttpResponse(content)
     else:
         # Fallback for development

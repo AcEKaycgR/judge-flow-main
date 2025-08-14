@@ -7,18 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Code2, Eye, EyeOff, Github, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { login as apiLogin } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -30,11 +34,30 @@ export default function Login() {
       return;
     }
 
-    toast({
-      title: "Welcome back!",
-      description: "You have been successfully logged in.",
-    });
-    navigate('/');
+    setLoading(true);
+    try {
+      const response = await apiLogin({
+        username: formData.email,
+        password: formData.password
+      });
+      
+      // Log in the user
+      login(response.user);
+      
+      toast({
+        title: "Welcome back!",
+        description: "You have been successfully logged in.",
+      });
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid credentials. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -104,6 +127,7 @@ export default function Login() {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="h-11"
+                    disabled={loading}
                   />
                 </div>
                 
@@ -117,6 +141,7 @@ export default function Login() {
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       className="h-11 pr-10"
+                      disabled={loading}
                     />
                     <Button
                       type="button"
@@ -124,6 +149,7 @@ export default function Login() {
                       size="icon"
                       className="absolute right-0 top-0 h-11 w-11"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -142,6 +168,7 @@ export default function Login() {
                       onCheckedChange={(checked) => 
                         setFormData(prev => ({ ...prev, rememberMe: checked as boolean }))
                       }
+                      disabled={loading}
                     />
                     <Label htmlFor="remember" className="text-sm">
                       Remember me
@@ -155,8 +182,20 @@ export default function Login() {
                   </Link>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full h-11">
-                  Sign in
+                <Button 
+                  type="submit" 
+                  variant="hero" 
+                  className="w-full h-11"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Signing in...
+                    </div>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
               </form>
 
@@ -176,6 +215,7 @@ export default function Login() {
                   variant="outline"
                   onClick={() => handleSocialLogin('GitHub')}
                   className="h-11"
+                  disabled={loading}
                 >
                   <Github className="h-4 w-4 mr-2" />
                   GitHub
@@ -184,6 +224,7 @@ export default function Login() {
                   variant="outline"
                   onClick={() => handleSocialLogin('Google')}
                   className="h-11"
+                  disabled={loading}
                 >
                   <Chrome className="h-4 w-4 mr-2" />
                   Google

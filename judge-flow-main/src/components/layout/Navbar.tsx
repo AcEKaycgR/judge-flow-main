@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Code2, Trophy, Play, FileText, Brain, User, Settings, LogOut, Menu, X } from 'lucide-react';
-import { mockUser } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { logout } from '@/lib/api';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Code2 },
@@ -18,9 +19,23 @@ const navigation = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout: authLogout } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      authLogout();
+      navigate('/login');
+    } catch (error) {
+      // Even if the API call fails, we still want to log out the user locally
+      authLogout();
+      navigate('/login');
+    }
   };
 
   return (
@@ -60,46 +75,58 @@ export default function Navbar() {
 
           {/* User menu */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Badge variant="secondary" className="bg-success-light text-success">
-              {mockUser.stats.solved} solved
-            </Badge>
+            {user && (
+              <Badge variant="secondary" className="bg-success-light text-success">
+                Developer
+              </Badge>
+            )}
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={mockUser.avatar} alt={mockUser.username} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {mockUser.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{mockUser.username}</p>
-                    <p className="w-[200px] truncate text-sm text-muted-foreground">
-                      {mockUser.email}
-                    </p>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{user.username}</p>
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex space-x-2">
+                <Button variant="outline" asChild>
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/signup">Sign Up</Link>
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -141,20 +168,36 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div className="border-t border-border pt-4 pb-3">
-              <div className="flex items-center px-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={mockUser.avatar} alt={mockUser.username} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {mockUser.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="ml-3">
-                  <div className="text-base font-medium text-foreground">{mockUser.username}</div>
-                  <div className="text-sm font-medium text-muted-foreground">{mockUser.email}</div>
+            {user ? (
+              <div className="border-t border-border pt-4 pb-3">
+                <div className="flex items-center px-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {user.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="ml-3">
+                    <div className="text-base font-medium text-foreground">{user.username}</div>
+                    <div className="text-sm font-medium text-muted-foreground">{user.email}</div>
+                  </div>
+                </div>
+                <div className="mt-3 px-2 space-y-1">
+                  <Button variant="outline" className="w-full" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </Button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="border-t border-border pt-4 pb-3 px-2 space-y-2">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                </Button>
+                <Button className="w-full" asChild>
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
