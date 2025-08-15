@@ -13,6 +13,7 @@ import Submissions from "./pages/Submissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
 import AIReview from "./pages/AIReview";
 import Contests from "./pages/Contests";
+import ContestDetail from "./pages/ContestDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -99,6 +100,7 @@ const AppContent = () => (
                       <Route path="/submissions/:id" element={<SubmissionDetail />} />
                       <Route path="/ai-review/:submissionId" element={<AIReview />} />
                       <Route path="/contests" element={<Contests />} />
+<Route path="/contests/:id" element={<ContestDetail />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </>

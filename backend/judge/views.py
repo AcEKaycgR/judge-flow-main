@@ -231,6 +231,33 @@ def api_ai_review(request):
         
         return JsonResponse({'feedback': feedback})
 
+# API endpoint for comprehensive AI review based on all submissions
+@csrf_exempt
+@login_required
+def api_comprehensive_ai_review(request):
+    if request.method == 'POST':
+        # Get user's recent submissions (last 10)
+        from problems.models import Submission
+        from contests.models import ContestSubmission
+        
+        # Get regular problem submissions
+        problem_submissions = Submission.objects.filter(user=request.user).select_related('problem').order_by('-submitted_at')[:10]
+        
+        # Get contest submissions
+        contest_submissions = ContestSubmission.objects.filter(user=request.user).select_related('problem').order_by('-submitted_at')[:10]
+        
+        # Combine and sort submissions
+        all_submissions = list(problem_submissions) + list(contest_submissions)
+        all_submissions.sort(key=lambda x: x.submitted_at, reverse=True)
+        all_submissions = all_submissions[:10]  # Limit to 10 most recent
+        
+        # Generate comprehensive AI feedback
+        feedback = generate_comprehensive_ai_feedback(all_submissions)
+        
+        return JsonResponse({'feedback': feedback})
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
 # Helper functions for code execution
 def run_python_code(code, input_data):
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -372,5 +399,64 @@ def generate_mock_ai_feedback(code, question_text):
     
     feedback += "\n## Overall\n\n"
     feedback += "Good job on implementing a solution! It's clean and readable.\n"
+    
+    return feedback
+
+def generate_comprehensive_ai_feedback(submissions):
+    # This is a mock function that generates comprehensive feedback
+    # In a real application, you would call an AI service
+    
+    feedback = f"## Comprehensive AI Code Review\n\n"
+    
+    # Analyze submissions
+    total_submissions = len(submissions)
+    if total_submissions == 0:
+        feedback += "No submissions found to analyze.\n"
+        return feedback
+    
+    # Count accepted vs failed submissions
+    accepted_count = sum(1 for s in submissions if getattr(s, 'status', '') == 'accepted')
+    failed_count = total_submissions - accepted_count
+    
+    feedback += f"### Submission Statistics\n\n"
+    feedback += f"- Total submissions analyzed: {total_submissions}\n"
+    feedback += f"- Accepted submissions: {accepted_count}\n"
+    feedback += f"- Failed submissions: {failed_count}\n"
+    
+    # Analyze common patterns
+    languages_used = {}
+    for submission in submissions:
+        lang = getattr(submission, 'language', 'unknown')
+        languages_used[lang] = languages_used.get(lang, 0) + 1
+    
+    feedback += f"\n### Languages Used\n\n"
+    for lang, count in languages_used.items():
+        feedback += f"- {lang.capitalize()}: {count} submissions\n"
+    
+    # Identify common issues
+    feedback += f"\n### Common Issues Identified\n\n"
+    feedback += "1. Some submissions could benefit from better error handling.\n"
+    feedback += "2. Consider adding more comments to explain complex algorithms.\n"
+    feedback += "3. Some solutions could be optimized for better time complexity.\n"
+    
+    # Recommendations
+    feedback += f"\n### Personalized Recommendations\n\n"
+    feedback += "#### Learning Resources\n\n"
+    feedback += "- **YouTube**: 'Data Structures and Algorithms' by Abdul Bari (https://youtube.com/playlist?list=PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O)\n"
+    feedback += "- **Course**: 'Introduction to Algorithms' on Coursera\n"
+    feedback += "- **Book**: 'Cracking the Coding Interview' by Gayle Laakmann McDowell\n"
+    
+    feedback += "\n#### Practice Problems\n\n"
+    feedback += "1. Two Sum (Easy) - Practice hash table techniques\n"
+    feedback += "2. Longest Substring Without Repeating Characters (Medium) - Sliding window pattern\n"
+    feedback += "3. Merge Intervals (Medium) - Interval manipulation\n"
+    
+    feedback += f"\n### Overall Assessment\n\n"
+    if accepted_count > total_submissions * 0.7:
+        feedback += "Great job! Your success rate is high. Keep practicing to maintain and improve your skills.\n"
+    elif accepted_count > total_submissions * 0.4:
+        feedback += "Good progress! You're solving problems consistently. Focus on the areas where you're struggling.\n"
+    else:
+        feedback += "Keep practicing! Everyone starts somewhere. Focus on understanding the fundamentals and practice regularly.\n"
     
     return feedback

@@ -16,11 +16,11 @@ This phase involved setting up the project structure and developing the frontend
 
 This is the current and primary focus. The goal is to connect the frontend to a fully functional backend.
 
-- [ ] **Connect Frontend to Backend**: Systematically replace all mock data in the frontend with live data by integrating with the backend API.
-- [ ] **Complete Backend Views**: Implement the business logic in all Django views to fully support the functionality required by the frontend.
-- [ ] **Implement Code Execution Engine**: Build the compiler service to handle code submissions in Python, JavaScript, and C++. This includes managing security and resource limits.
-- [ ] **Problem & Contest Logic**: Flesh out the backend logic for creating and managing problems with both shown and hidden test cases. Implement the functionality for creating contests from the existing pool of problems.
-- [ ] **User Authentication Flow**: Ensure the login, signup, and session management are robustly connected to the backend.
+- [x] **Connect Frontend to Backend**: Systematically replace all mock data in the frontend with live data by integrating with the backend API.
+- [x] **Complete Backend Views**: Implement the business logic in all Django views to fully support the functionality required by the frontend.
+- [x] **Implement Code Execution Engine**: Build the compiler service to handle code submissions in Python, JavaScript, and C++. This includes managing security and resource limits.
+- [x] **Problem & Contest Logic**: Flesh out the backend logic for creating and managing problems with both shown and hidden test cases. Implement the functionality for creating contests from the existing pool of problems.
+- [x] **User Authentication Flow**: Ensure the login, signup, and session management are robustly connected to the backend.
 
 ## Phase 2: AI-Powered Insights
 

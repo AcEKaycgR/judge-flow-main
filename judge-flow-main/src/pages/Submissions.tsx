@@ -18,6 +18,8 @@ interface Submission {
   language: string;
   runtime: number | null;
   submitted_at: string;
+  is_contest?: boolean;
+  contest_name?: string;
 }
 
 export default function Submissions() {
@@ -198,13 +200,22 @@ export default function Submissions() {
                     <TableRow key={submission.id}>
                       <TableCell className="font-medium">#{submission.id}</TableCell>
                       <TableCell>
+                      {submission.is_contest ? (
+                        <div>
+                          <div className="font-medium">{submission.problem_title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Contest: {submission.contest_name}
+                          </div>
+                        </div>
+                      ) : (
                         <Link 
                           to={`/questions/${submission.problem_id}`} 
                           className="font-medium hover:underline"
                         >
                           {submission.problem_title}
                         </Link>
-                      </TableCell>
+                      )}
+                    </TableCell>
                       <TableCell>
                         <StatusBadge status={submission.status} />
                       </TableCell>

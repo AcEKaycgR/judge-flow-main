@@ -21,4 +21,5 @@ urlpatterns = [
     path('api/run-code/', views.api_run_code, name='api_run_code'),
     path('api/submit-code/', views.api_submit_code, name='api_submit_code'),
     path('api/ai-review/', views.api_ai_review, name='api_ai_review'),
+    path('api/comprehensive-ai-review/', views.api_comprehensive_ai_review, name='api_comprehensive_ai_review'),
 ]

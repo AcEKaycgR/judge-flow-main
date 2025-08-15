@@ -15,7 +15,10 @@ import {
   Bookmark,
   ThumbsUp,
   MessageCircle,
-  AlertCircle
+  AlertCircle,
+  Target,
+  BookOpen,
+  Youtube
 } from 'lucide-react';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
 import CodeEditor from '@/components/common/CodeEditor';
@@ -44,6 +47,9 @@ export default function QuestionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('javascript');
+  const [code, setCode] = useState('');
+  const [aiFeedback, setAiFeedback] = useState('');
+  const [isAILoading, setIsAILoading] = useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isExamplesOpen, setIsExamplesOpen] = useState(true);
@@ -128,6 +134,24 @@ export default function QuestionDetail() {
     // The actual submit logic is handled by the CodeEditor component
     // This function is called after successful submission
     // We don't need to show a generic toast here since the CodeEditor shows detailed results
+  };
+
+  const handleAIReview = async () => {
+    if (!question || !id) return;
+    
+    setIsAILoading(true);
+    try {
+      const data = await getProblemAIReview(Number(id), code);
+      setAiFeedback(data.feedback);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to get AI review. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAILoading(false);
+    }
   };
 
   return (
@@ -268,17 +292,20 @@ export default function QuestionDetail() {
           <div className="bg-background">
             <div className="p-6 h-full">
               <Tabs defaultValue="code" className="h-full flex flex-col">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
                   <TabsTrigger value="code" className="flex items-center gap-2">
                     <PlayCircle className="h-4 w-4" />
                     Code
                   </TabsTrigger>
                   <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                  <TabsTrigger value="ai-review">AI Review</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="code" className="flex-1 mt-0">
                   <CodeEditor
                     problemId={question.id}
+                    code={code}
+                    onCodeChange={setCode}
                     initialInput={question.test_cases.length > 0 ? question.test_cases[0].input_data : ''}
                     language={selectedLanguage}
                     onLanguageChange={setSelectedLanguage}
@@ -300,6 +327,66 @@ export default function QuestionDetail() {
                         <p>No submissions yet</p>
                         <p className="text-sm">Submit your solution to see it here</p>
                       </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="ai-review" className="flex-1 mt-0">
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-purple-600" />
+                        AI Code Review
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isAILoading ? (
+                        <div className="flex flex-col items-center justify-center h-64">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                          <p className="text-muted-foreground">Analyzing your code...</p>
+                        </div>
+                      ) : aiFeedback ? (
+                        <div className="prose prose-sm max-w-none">
+                          <pre className="whitespace-pre-wrap bg-muted/50 p-4 rounded-lg">{aiFeedback}</pre>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="text-center py-8">
+                            <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                            <p className="text-muted-foreground mb-4">Get AI-powered feedback on your code</p>
+                            <Button 
+                              onClick={handleAIReview} 
+                              disabled={!code.trim()}
+                              className="gap-2"
+                            >
+                              <Brain className="h-4 w-4" />
+                              Analyze My Code
+                            </Button>
+                          </div>
+                          
+                          <div className="border-t border-border pt-6">
+                            <h3 className="font-medium mb-3">What the AI Review provides:</h3>
+                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                              <li className="flex items-start gap-2">
+                                <Target className="h-4 w-4 mt-0.5 text-purple-600 flex-shrink-0" />
+                                <span>Code quality analysis</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <BookOpen className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                                <span>Personalized learning recommendations</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <Youtube className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
+                                <span>YouTube video suggestions</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <Target className="h-4 w-4 mt-0.5 text-orange-600 flex-shrink-0" />
+                                <span>Practice problem recommendations</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

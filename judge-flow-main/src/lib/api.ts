@@ -255,6 +255,40 @@ export const getContest = async (id: number) => {
   return response.json();
 };
 
+export const getContestSubmissions = async (contestId: number) => {
+  const response = await fetch(`${API_BASE_URL}/contests/${contestId}/submissions/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch contest submissions');
+  }
+  
+  return response.json();
+};
+
+export const createContest = async (data: any) => {
+  const response = await fetch(`${API_BASE_URL}/contests/create/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
+    },
+    body: JSON.stringify(data),
+    credentials: 'same-origin',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to create contest');
+  }
+  
+  return response.json();
+};
+
 export const submitContestSolution = async (data: any) => {
   const response = await fetch(`${API_BASE_URL}/contests/submit/`, {
     method: 'POST',
@@ -305,6 +339,41 @@ export const getAIReview = async (data: AIReviewData) => {
   
   if (!response.ok) {
     throw new Error('Failed to get AI review');
+  }
+  
+  return response.json();
+};
+
+export const getComprehensiveAIReview = async () => {
+  const response = await fetch(`${API_BASE_URL}/ai-review/comprehensive-ai-review/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
+    },
+    credentials: 'same-origin',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to get comprehensive AI review');
+  }
+  
+  return response.json();
+};
+
+export const getProblemAIReview = async (problemId: number, code: string) => {
+  const response = await fetch(`${API_BASE_URL}/ai-review/problem-ai-review/${problemId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify({ code }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to get problem AI review');
   }
   
   return response.json();

@@ -42,15 +42,15 @@ export interface Submission {
 }
 
 export interface Contest {
-  id: string;
-  title: string;
-  description: string;
-  startTime: Date;
-  endTime: Date;
-  duration: number; // minutes
-  questions: Question[];
-  participants: number;
-  status: 'upcoming' | 'active' | 'ended';
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  problem_count: number;
+  is_active: boolean;
+  // These fields are computed on the frontend
+  duration?: number;
+  status?: 'upcoming' | 'active' | 'ended';
 }
 
 export interface AIReview {

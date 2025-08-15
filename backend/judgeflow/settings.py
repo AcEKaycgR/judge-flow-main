@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'problems',
     'contests',
     'compiler',
+    'ai_review',
 ]
 
 MIDDLEWARE = [

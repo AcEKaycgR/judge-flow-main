@@ -14,6 +14,7 @@ const navigation = [
   { name: 'Contests', href: '/contests', icon: Trophy },
   { name: 'Playground', href: '/playground', icon: Play },
   { name: 'Submissions', href: '/submissions', icon: FileText },
+  { name: 'AI Review', href: '/ai-review', icon: Brain },
 ];
 
 export default function Navbar() {

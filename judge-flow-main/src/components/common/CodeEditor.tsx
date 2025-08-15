@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 interface CodeEditorProps {
   problemId?: number;
   initialCode?: string;
+  code?: string;
+  onCodeChange?: (code: string) => void;
   initialInput?: string;
   language?: Language;
   onLanguageChange?: (language: Language) => void;
@@ -26,6 +28,8 @@ interface CodeEditorProps {
 export default function CodeEditor({
   problemId,
   initialCode = '',
+  code: externalCode,
+  onCodeChange,
   initialInput = '',
   language = 'javascript',
   onLanguageChange,
@@ -36,12 +40,16 @@ export default function CodeEditor({
   className
 }: CodeEditorProps) {
   const { toast } = useToast();
-  const [code, setCode] = useState(initialCode);
+  const [internalCode, setInternalCode] = useState(initialCode);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(language);
   const [input, setInput] = useState(initialInput);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Use external code if provided, otherwise use internal state
+  const code = externalCode !== undefined ? externalCode : internalCode;
+  const setCode = onCodeChange || setInternalCode;
 
   const handleLanguageChange = (value: Language) => {
     setSelectedLanguage(value);
