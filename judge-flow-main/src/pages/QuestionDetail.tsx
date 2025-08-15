@@ -18,13 +18,17 @@ import {
   AlertCircle,
   Target,
   BookOpen,
-  Youtube
+  Youtube,
+  Clock,
+  Calendar,
+  Eye
 } from 'lucide-react';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
 import CodeEditor from '@/components/common/CodeEditor';
+import StatusBadge from '@/components/common/StatusBadge';
 import { Language } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { getProblem } from '@/lib/api';
+import { getProblem, getUserSubmissions } from '@/lib/api';
 
 interface Question {
   id: number;
@@ -50,6 +54,8 @@ export default function QuestionDetail() {
   const [code, setCode] = useState('');
   const [aiFeedback, setAiFeedback] = useState('');
   const [isAILoading, setIsAILoading] = useState(false);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isExamplesOpen, setIsExamplesOpen] = useState(true);
@@ -83,6 +89,30 @@ export default function QuestionDetail() {
 
     fetchQuestion();
   }, [id]);
+
+  // Fetch submissions for this problem
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      if (!question) return;
+      
+      setSubmissionsLoading(true);
+      try {
+        const data = await getUserSubmissions();
+        // Filter submissions for this specific problem
+        const problemSubmissions = data.submissions.filter(
+          (sub: any) => sub.problem_id === question.id
+        );
+        setSubmissions(problemSubmissions);
+      } catch (err) {
+        console.error('Error fetching submissions:', err);
+        // Don't show error to user since this is secondary data
+      } finally {
+        setSubmissionsLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, [question]);
 
   if (loading) {
     return (
@@ -322,11 +352,50 @@ export default function QuestionDetail() {
                       <CardTitle>Your Submissions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center py-12 text-muted-foreground">
-                        <PlayCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No submissions yet</p>
-                        <p className="text-sm">Submit your solution to see it here</p>
-                      </div>
+                      {submissionsLoading ? (
+                        <div className="flex items-center justify-center h-64">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      ) : submissions.length > 0 ? (
+                        <div className="space-y-4">
+                          {submissions.map((submission: any) => (
+                            <div key={submission.id} className="border rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <span className="font-mono text-sm">#{submission.id}</span>
+                                  <StatusBadge status={submission.status} />
+                                  <Badge variant="secondary">
+                                    {submission.language}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  {submission.runtime && (
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-4 w-4" />
+                                      <span>{submission.runtime.toFixed(3)}s</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>{new Date(submission.submitted_at).toLocaleDateString()}</span>
+                                  </div>
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <Link to={`/submissions/${submission.id}`}>
+                                      <Eye className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <PlayCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No submissions yet</p>
+                          <p className="text-sm">Submit your solution to see it here</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

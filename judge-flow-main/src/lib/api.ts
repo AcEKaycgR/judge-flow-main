@@ -362,7 +362,7 @@ export const getComprehensiveAIReview = async () => {
 };
 
 export const getProblemAIReview = async (problemId: number, code: string) => {
-  const response = await fetch(`${API_BASE_URL}/ai-review/problem-ai-review/${problemId}/`, {
+  const response = await fetch(`${API_BASE_URL}/problems/${problemId}/ai-review/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

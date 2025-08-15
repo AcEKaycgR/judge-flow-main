@@ -15,7 +15,8 @@ import {
   Calendar,
   ChevronRight 
 } from 'lucide-react';
-import { getProfile, getDashboardData } from '@/lib/api';
+import { getProfile, getDashboardData, getUserSubmissions } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
 import CountdownTimer from '@/components/common/CountdownTimer';
 
 interface User {
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [upcomingContests, setUpcomingContests] = useState<Contest[]>([]);
+  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,14 +51,20 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [profileResponse, dashboardResponse] = await Promise.all([
+        const [profileResponse, dashboardResponse, submissionsResponse] = await Promise.all([
           getProfile(),
           getDashboardData(),
+          getUserSubmissions(),
         ]);
         
         setUser(profileResponse.user);
         setStats(dashboardResponse.stats);
         setUpcomingContests(dashboardResponse.upcoming_contests);
+        
+        // Get recent submissions (last 3)
+        const recent = submissionsResponse.submissions.slice(0, 3);
+        setRecentSubmissions(recent);
+        
         setError(null);
       } catch (err) {
         setError('Failed to fetch dashboard data');
@@ -210,46 +218,45 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-success rounded-full"></div>
-                    <div>
-                      <p className="font-medium">Solved "Two Sum"</p>
-                      <p className="text-sm text-muted-foreground">JavaScript • 2 hours ago</p>
+              {recentSubmissions.length > 0 ? (
+                <div className="space-y-4">
+                  {recentSubmissions.map((submission) => (
+                    <div key={submission.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          submission.status === 'accepted' ? 'bg-success' :
+                          submission.status === 'wrong_answer' ? 'bg-destructive' :
+                          'bg-warning'
+                        }`}></div>
+                        <div>
+                          <p className="font-medium">Solved "{submission.problem_title}"</p>
+                          <p className="text-sm text-muted-foreground">
+                            {submission.language.charAt(0).toUpperCase() + submission.language.slice(1)} • {formatDistanceToNow(new Date(submission.submitted_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          submission.status === 'accepted' ? 'bg-success-light text-success' :
+                          submission.status === 'wrong_answer' ? 'bg-destructive-light text-destructive' :
+                          'bg-warning-light text-warning'
+                        }
+                      >
+                        {submission.status === 'accepted' ? 'Accepted' :
+                         submission.status === 'wrong_answer' ? 'Wrong Answer' :
+                         'Pending'}
+                      </Badge>
                     </div>
-                  </div>
-                  <Badge variant="outline" className="bg-success-light text-success">
-                    Accepted
-                  </Badge>
+                  ))}
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-destructive rounded-full"></div>
-                    <div>
-                      <p className="font-medium">Attempted "Binary Tree Path"</p>
-                      <p className="text-sm text-muted-foreground">Python • 5 hours ago</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-destructive-light text-destructive">
-                    Wrong Answer
-                  </Badge>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No recent activity</p>
+                  <p className="text-sm">Start solving problems to see your activity here</p>
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-success rounded-full"></div>
-                    <div>
-                      <p className="font-medium">Completed "Valid Parentheses"</p>
-                      <p className="text-sm text-muted-foreground">Java • 1 day ago</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-success-light text-success">
-                    Accepted
-                  </Badge>
-                </div>
-              </div>
+              )}
               
               <div className="mt-4 pt-4 border-t border-border">
                 <Link to="/submissions">

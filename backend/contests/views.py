@@ -150,27 +150,70 @@ def submit_contest_solution(request):
         if not (contest.start_time <= timezone.now() <= contest.end_time):
             return JsonResponse({'error': 'Contest is not active'}, status=400)
         
-        # Create contest submission
+        # Import the compiler functions
+        from compiler.views import execute_code_submission
+        
+        # Create contest submission with pending status
         submission = ContestSubmission.objects.create(
             user=request.user,
             contest=contest,
             problem=problem,
             code=code,
             language=language,
-            status='accepted',  # For simplicity, we'll assume all submissions are accepted
+            status='pending',
         )
         
-        # For now, we'll mock the evaluation
+        # Get all test cases for the problem (both shown and hidden)
+        test_cases = problem.test_cases.all()
+        
+        # Initialize result
         result = {
-            'status': 'accepted',
-            'runtime': 0.01,
-            'memory': 10.5,
+            'status': 'accepted',  # Default to accepted, change if any test fails
+            'runtime': 0.0,
+            'memory': 0.0,
+            'test_results': []  # Store detailed test case results
         }
+        
+        # Run the code against each test case
+        for i, test_case in enumerate(test_cases):
+            # Execute the code with the test case input
+            output, error = execute_code_submission(code, language, test_case.input_data)
+            
+            # Create test result entry
+            test_result = {
+                'test_case_id': test_case.id,
+                'passed': True,
+                'input': test_case.input_data,
+                'expected_output': test_case.expected_output,
+                'actual_output': output,
+                'error': error
+            }
+            
+            # If there's an execution error, mark as runtime error and break
+            if error:
+                result['status'] = 'runtime_error'
+                test_result['passed'] = False
+                result['test_results'].append(test_result)
+                break
+            
+            # Compare output with expected output
+            if output.strip() != test_case.expected_output.strip():
+                result['status'] = 'wrong_answer'
+                test_result['passed'] = False
+                result['test_results'].append(test_result)
+                break
+            else:
+                # Test case passed
+                result['test_results'].append(test_result)
         
         # Update submission with results
         submission.status = result['status']
-        submission.runtime = result['runtime']
-        submission.memory = result['memory']
+        # In a real implementation, we would also capture actual runtime and memory
+        # For now, we'll use placeholder values
+        submission.runtime = result['runtime'] if result['status'] == 'accepted' else None
+        submission.memory = result['memory'] if result['status'] == 'accepted' else None
+        # Store detailed test case results
+        submission.test_case_results = result['test_results']
         submission.save()
         
         return JsonResponse({
@@ -178,4 +221,5 @@ def submit_contest_solution(request):
             'status': submission.status,
             'runtime': submission.runtime,
             'memory': submission.memory,
+            'test_results': result['test_results']
         })
