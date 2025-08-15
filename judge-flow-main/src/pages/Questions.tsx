@@ -1,29 +1,85 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Code, Clock, Users } from 'lucide-react';
-import { mockQuestions, questionTags } from '@/data/mockData';
+import { Search, Filter, Code, Clock, Users, AlertCircle } from 'lucide-react';
+import { getProblems } from '@/lib/api';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
 
+interface Question {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  tags: string[];
+}
+
 export default function Questions() {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>('title');
 
-  const filteredQuestions = mockQuestions.filter(question => {
-    const matchesSearch = question.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         question.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
-    const matchesTags = selectedTags.length === 0 || 
-                       selectedTags.every(tag => question.tags.includes(tag));
-    
-    return matchesSearch && matchesDifficulty && matchesTags;
-  });
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const data = await getProblems();
+        // Transform the API response to match our interface
+        const transformedQuestions = data.problems.map((problem: any) => ({
+          id: problem.id,
+          title: problem.title,
+          description: '', // Description is not in the API response
+          difficulty: problem.difficulty,
+          tags: problem.tags
+        }));
+        setQuestions(transformedQuestions);
+        setError(null);
+      } catch (err) {
+        setError('Failed to fetch problems. Please try again later.');
+        console.error('Error fetching problems:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
+
+  useEffect(() => {
+    const filtered = questions.filter(question => {
+      const matchesSearch = question.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
+      const matchesTags = selectedTags.length === 0 || 
+                         selectedTags.every(tag => question.tags.includes(tag));
+      
+      return matchesSearch && matchesDifficulty && matchesTags;
+    });
+
+    // Sort questions
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'difficulty':
+          const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
+          return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+        case 'tags':
+          return a.tags.length - b.tags.length;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredQuestions(sorted);
+  }, [questions, searchQuery, selectedDifficulty, selectedTags, sortBy]);
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags(prev => 
@@ -32,6 +88,40 @@ export default function Questions() {
         : [...prev, tag]
     );
   };
+
+  // Extract unique tags from all questions
+  const allTags = Array.from(new Set(questions.flatMap(question => question.tags)));
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+          <h2 className="text-xl font-semibold text-destructive mb-2">Error</h2>
+          <p className="text-destructive">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+            variant="outline"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -94,7 +184,7 @@ export default function Questions() {
           <div>
             <h4 className="text-sm font-medium mb-3">Filter by Tags</h4>
             <div className="flex flex-wrap gap-2">
-              {questionTags.slice(0, 12).map(tag => (
+              {allTags.slice(0, 12).map(tag => (
                 <Badge
                   key={tag}
                   variant={selectedTags.includes(tag) ? "default" : "outline"}

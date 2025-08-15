@@ -4,7 +4,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 import json
-from .models import Problem, Submission, Tag
+from .models import Problem, Submission, Tag, TestCase
+
+# This is a placeholder for the actual code execution logic
+# which would likely involve a separate service, sandboxing, etc.
+# The actual implementation has been moved to the compiler app.
 
 @csrf_exempt
 def problems_list(request):
@@ -47,59 +51,26 @@ def problem_detail(request, problem_id):
     if request.method == 'GET':
         problem = get_object_or_404(Problem, id=problem_id)
         
+        # Get only the shown test cases (where is_hidden is False)
+        shown_test_cases = problem.test_cases.filter(is_hidden=False)
+        
         problem_data = {
             'id': problem.id,
             'title': problem.title,
             'description': problem.description,
             'difficulty': problem.difficulty,
             'constraints': problem.constraints,
-            'sample_input': problem.sample_input,
-            'sample_output': problem.sample_output,
             'tags': [tag.name for tag in problem.tags.all()],
+            'test_cases': [
+                {
+                    'input_data': test_case.input_data,
+                    'expected_output': test_case.expected_output
+                }
+                for test_case in shown_test_cases
+            ]
         }
         
         return JsonResponse({'problem': problem_data})
-
-@csrf_exempt
-@login_required
-def submit_solution(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        problem_id = data.get('problem_id')
-        code = data.get('code', '')
-        language = data.get('language', 'python')
-        
-        # Get problem
-        problem = get_object_or_404(Problem, id=problem_id)
-        
-        # Create submission
-        submission = Submission.objects.create(
-            user=request.user,
-            problem=problem,
-            code=code,
-            language=language,
-            status='accepted',  # For simplicity, we'll assume all submissions are accepted
-        )
-        
-        # For now, we'll mock the evaluation
-        result = {
-            'status': 'accepted',
-            'runtime': 0.01,
-            'memory': 10.5,
-        }
-        
-        # Update submission with results
-        submission.status = result['status']
-        submission.runtime = result['runtime']
-        submission.memory = result['memory']
-        submission.save()
-        
-        return JsonResponse({
-            'submission_id': submission.id,
-            'status': submission.status,
-            'runtime': submission.runtime,
-            'memory': submission.memory,
-        })
 
 @csrf_exempt
 @login_required
@@ -120,3 +91,24 @@ def user_submissions(request):
             })
         
         return JsonResponse({'submissions': submissions_data})
+
+@csrf_exempt
+@login_required
+def submission_detail(request, submission_id):
+    if request.method == 'GET':
+        submission = get_object_or_404(Submission, id=submission_id, user=request.user)
+        
+        submission_data = {
+            'id': submission.id,
+            'problem_id': submission.problem.id,
+            'problem_title': submission.problem.title,
+            'code': submission.code,
+            'language': submission.language,
+            'status': submission.status,
+            'runtime': submission.runtime,
+            'memory': submission.memory,
+            'test_case_results': submission.test_case_results,
+            'submitted_at': submission.submitted_at.isoformat(),
+        }
+        
+        return JsonResponse({'submission': submission_data})

@@ -1,52 +1,38 @@
-# Roadmap: JudgeFlow Platform
+# Product Roadmap
 
-## Phase 0: Already Completed
+This roadmap outlines the development plan for JudgeFlow, reflecting the current state of the project and future goals.
 
-The following features have been implemented:
+## Phase 0: Foundation & UI Mockups (Completed)
 
-- [x] Django backend project structure
-- [x] Modular app architecture (accounts, problems, contests, compiler)
-- [x] Comprehensive data models (User, Problem, Submission, Contest, Tag, AIReview)
-- [x] REST API endpoints for all functionality
-- [x] Django admin interface
-- [x] Database migrations and superuser creation
-- [x] React frontend with all UI pages
-- [x] API client for frontend-backend communication
+This phase involved setting up the project structure and developing the frontend user interface with mock data.
 
-## Phase 1: Current Development
+- [x] **Backend Scaffolding**: Initial Django project setup with applications for `accounts`, `problems`, `contests`, and `compiler`.
+- [x] **Database Models**: Core data models for users, problems, contests, and submissions defined in Django.
+- [x] **Frontend UI Development**: The user interface for all major features was created using React, TypeScript, and Tailwind CSS.
+- [x] **Component Library**: A comprehensive set of UI components was built using Shadcn UI.
+- [x] **UI Mockups**: The frontend was populated with mock data to enable visual development and establish the target user experience.
 
-- [ ] Connect frontend to backend APIs
-- [ ] Replace mock data with real API calls
-- [ ] Implement authentication flow
-- [ ] Connect code execution functionality
-- [ ] Add proper error handling and loading states
+## Phase 1: Backend Implementation & Frontend Integration
 
-## Phase 2: Core Features
+This is the current and primary focus. The goal is to connect the frontend to a fully functional backend.
 
-- [ ] User profile management
-- [ ] Problem search and filtering
-- [ ] Code submission and judging
-- [ ] Contest creation and participation
-- [ ] Progress tracking and statistics
+- [ ] **Connect Frontend to Backend**: Systematically replace all mock data in the frontend with live data by integrating with the backend API.
+- [ ] **Complete Backend Views**: Implement the business logic in all Django views to fully support the functionality required by the frontend.
+- [ ] **Implement Code Execution Engine**: Build the compiler service to handle code submissions in Python, JavaScript, and C++. This includes managing security and resource limits.
+- [ ] **Problem & Contest Logic**: Flesh out the backend logic for creating and managing problems with both shown and hidden test cases. Implement the functionality for creating contests from the existing pool of problems.
+- [ ] **User Authentication Flow**: Ensure the login, signup, and session management are robustly connected to the backend.
 
-## Phase 3: Advanced Features
+## Phase 2: AI-Powered Insights
 
-- [ ] AI-powered code review
-- [ ] Real-time contest leaderboard
-- [ ] Social features (following, activity feeds)
-- [ ] Notification system
+Once the core platform is functional, the focus will shift to the AI-driven features.
 
-## Phase 4: Production Ready
+- [ ] **Implement AI Review Feature**: Develop the backend logic to retrieve a user's last 10 submissions, analyze them using an AI model, and generate targeted feedback and recommendations.
+- [ ] **Integrate AI Review with Frontend**: Create the API endpoint for the AI review and display the analysis on the dedicated frontend page.
 
-- [ ] PostgreSQL database migration
-- [ ] Performance optimization
-- [ ] Security enhancements
-- [ ] Deployment configuration
-- [ ] Testing and quality assurance
+## Phase 3: Polish & Refinement
 
-## Phase 5: Future Enhancements
+This phase involves improving the overall quality and preparing for a stable release.
 
-- [ ] Mobile application
-- [ ] Advanced analytics
-- [ ] Personalized recommendations
-- [ ] Community features
+- [ ] **Refine User Experience**: Address any UI/UX inconsistencies and bugs.
+- [ ] **Testing**: Add more comprehensive tests for both the frontend and backend to ensure reliability.
+- [ ] **Deployment Preparation**: If desired, prepare the application for production by configuring a production-ready database, web server, and static file handling.

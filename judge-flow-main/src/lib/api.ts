@@ -173,7 +173,7 @@ export const getProblem = async (id: number) => {
 };
 
 export const submitSolution = async (data: SubmitSolutionData) => {
-  const response = await fetch(`${API_BASE_URL}/problems/submit/`, {
+  const response = await fetch(`${API_BASE_URL}/compiler/submit-solution/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -201,6 +201,22 @@ export const getUserSubmissions = async () => {
   
   if (!response.ok) {
     throw new Error('Failed to fetch submissions');
+  }
+  
+  return response.json();
+};
+
+export const getSubmission = async (submissionId: number) => {
+  const response = await fetch(`${API_BASE_URL}/problems/submissions/${submissionId}/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch submission');
   }
   
   return response.json();

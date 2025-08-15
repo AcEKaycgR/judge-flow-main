@@ -19,19 +19,36 @@ class Problem(models.Model):
     description = models.TextField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     constraints = models.TextField(blank=True)
-    sample_input = models.TextField(blank=True)
-    sample_output = models.TextField(blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     
     def __str__(self):
         return self.title
 
+class TestCase(models.Model):
+    problem = models.ForeignKey(Problem, related_name='test_cases', on_delete=models.CASCADE)
+    input_data = models.TextField(help_text="Input for the test case")
+    expected_output = models.TextField(help_text="Expected output for the test case")
+    is_hidden = models.BooleanField(default=False, help_text="Is this test case hidden from the user?")
+
+    def __str__(self):
+        if self.problem_id:
+            try:
+                return f"Test Case for {self.problem.title}"
+            except:
+                return f"Test Case {self.id}"
+        else:
+            return f"Test Case {self.id}"
+
 class Submission(models.Model):
     LANGUAGE_CHOICES = [
         ('python', 'Python'),
         ('javascript', 'JavaScript'),
         ('cpp', 'C++'),
+        ('java', 'Java'),
+        ('c', 'C'),
+        ('go', 'Go'),
+        ('rust', 'Rust'),
     ]
     
     STATUS_CHOICES = [
@@ -50,6 +67,9 @@ class Submission(models.Model):
     runtime = models.FloatField(null=True, blank=True)  # in seconds
     memory = models.FloatField(null=True, blank=True)   # in MB
     submitted_at = models.DateTimeField(default=timezone.now)
+    
+    # Fields for storing detailed test case results
+    test_case_results = models.JSONField(null=True, blank=True, help_text="Detailed results for each test case")
     
     def __str__(self):
         return f"{self.user.username} - {self.problem.title}"

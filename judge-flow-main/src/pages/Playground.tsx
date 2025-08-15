@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Save, Share, Download, FileText } from 'lucide-react';
+import { Play, Save, Share, Download, FileText, Upload } from 'lucide-react';
 import CodeEditor from '@/components/common/CodeEditor';
 import { Language } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -63,10 +63,88 @@ export default function Playground() {
   };
 
   const handleDownload = () => {
+    // Get the current code from the editor
+    const code = (document.querySelector('textarea') as HTMLTextAreaElement)?.value || '';
+    const language = selectedLanguage;
+    
+    // Create a blob with the code
+    const blob = new Blob([code], { type: 'text/plain' });
+    
+    // Create a download link
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `playground-${new Date().toISOString().slice(0, 10)}.${getFileExtension(language)}`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
     toast({
       title: "Code downloaded",
       description: "Your code has been downloaded as a file.",
     });
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        // Load the content into the editor
+        const textarea = document.querySelector('textarea');
+        if (textarea) {
+          (textarea as HTMLTextAreaElement).value = content;
+          // Trigger a change event to update the state
+          const changeEvent = new Event('input', { bubbles: true });
+          textarea.dispatchEvent(changeEvent);
+        }
+        
+        // Try to guess the language from the file extension
+        const fileName = file.name;
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const languageMap: Record<string, Language> = {
+          'js': 'javascript',
+          'py': 'python',
+          'java': 'java',
+          'cpp': 'cpp',
+          'c': 'c',
+          'go': 'go',
+          'rs': 'rust'
+        };
+        const language = extension ? languageMap[extension] || 'javascript' : 'javascript';
+        setSelectedLanguage(language);
+        
+        toast({
+          title: "Snippet imported",
+          description: `Successfully imported ${fileName}`,
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset the input so the same file can be imported again
+    event.target.value = '';
+  };
+
+  const getFileExtension = (language: Language) => {
+    const extensions: Record<Language, string> = {
+      javascript: 'js',
+      python: 'py',
+      java: 'java',
+      cpp: 'cpp',
+      c: 'c',
+      go: 'go',
+      rust: 'rs'
+    };
+    return extensions[language] || 'txt';
   };
 
   return (
@@ -92,6 +170,17 @@ export default function Playground() {
               <Download className="h-4 w-4" />
               Download
             </Button>
+            <Button variant="outline" onClick={() => document.getElementById('import-snippet')?.click()}>
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
+            <input
+              id="import-snippet"
+              type="file"
+              accept=".js,.py,.java,.cpp,.c,.go,.rs,.txt"
+              className="hidden"
+              onChange={handleImport}
+            />
           </div>
         </div>
       </div>
@@ -109,7 +198,11 @@ export default function Playground() {
                 <Button 
                   variant="hero" 
                   size="sm"
-                  onClick={() => handleSave('// Sample code', selectedLanguage)}
+                  onClick={() => {
+                    // Get the current code from the editor
+                    const code = (document.querySelector('textarea') as HTMLTextAreaElement)?.value || '';
+                    handleSave(code, selectedLanguage);
+                  }}
                 >
                   <Save className="h-4 w-4" />
                   Save Snippet
@@ -157,6 +250,18 @@ helloWorld();`}
                     <div 
                       key={snippet.id}
                       className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-smooth"
+                      onClick={() => {
+                        // Load the snippet into the editor
+                        const textarea = document.querySelector('textarea');
+                        if (textarea) {
+                          (textarea as HTMLTextAreaElement).value = snippet.code;
+                          // Trigger a change event to update the state
+                          const event = new Event('input', { bubbles: true });
+                          textarea.dispatchEvent(event);
+                        }
+                        // Set the language
+                        setSelectedLanguage(snippet.language);
+                      }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium truncate">
@@ -193,13 +298,32 @@ helloWorld();`}
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  // Clear the editor and load the template
+                  const textarea = document.querySelector('textarea');
+                  if (textarea) {
+                    // Import the getLanguageTemplate function from CodeEditor
+                    const template = `// Welcome to JudgeFlow Playground!
+// Start coding here...
+
+function helloWorld() {
+  console.log("Hello, World!");
+  return "Ready to code!";
+}
+
+helloWorld();`;
+                    (textarea as HTMLTextAreaElement).value = template;
+                    // Trigger a change event to update the state
+                    const event = new Event('input', { bubbles: true });
+                    textarea.dispatchEvent(event);
+                  }
+                }}
+              >
                 <FileText className="h-4 w-4 mr-2" />
                 New Snippet
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Download className="h-4 w-4 mr-2" />
-                Import File
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <Share className="h-4 w-4 mr-2" />
