@@ -1,10 +1,10 @@
 // Core types for the JudgeFlow platform
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
   avatar?: string;
-  stats: {
+  stats?: {
     solved: number;
     attempted: number;
     accuracy: number;
@@ -12,13 +12,13 @@ export interface User {
 }
 
 export interface Question {
-  id: string;
+  id: number;
   title: string;
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   tags: string[];
   constraints: string;
-  examples: {
+  examples?: {
     input: string;
     output: string;
     explanation?: string;
@@ -30,14 +30,14 @@ export interface Question {
 }
 
 export interface Submission {
-  id: string;
-  questionId: string;
-  questionTitle: string;
-  status: 'accepted' | 'wrong_answer' | 'time_limit' | 'runtime_error' | 'pending';
+  id: number;
+  problem_id: number;
+  problem_title: string;
+  status: 'accepted' | 'wrong_answer' | 'time_limit_exceeded' | 'runtime_error' | 'pending';
   language: string;
   runtime?: number;
   memory?: number;
-  submittedAt: Date;
+  submitted_at: string; // ISO string format
   code: string;
 }
 
@@ -51,11 +51,18 @@ export interface Contest {
   // These fields are computed on the frontend
   duration?: number;
   status?: 'upcoming' | 'active' | 'ended';
+  problems?: Problem[];
+}
+
+export interface Problem {
+  id: number;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
 }
 
 export interface AIReview {
-  id: string;
-  submissionId: string;
+  id: number;
+  submissionId: number;
   feedback: {
     type: 'tip' | 'warning' | 'improvement' | 'compliment';
     message: string;

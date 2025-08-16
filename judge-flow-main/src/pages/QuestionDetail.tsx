@@ -21,7 +21,11 @@ import {
   Youtube,
   Clock,
   Calendar,
-  Eye
+  Eye,
+  Lightbulb,
+  Code,
+  Award,
+  RefreshCw
 } from 'lucide-react';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
 import CodeEditor from '@/components/common/CodeEditor';
@@ -52,7 +56,9 @@ export default function QuestionDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('javascript');
   const [code, setCode] = useState('');
-  const [aiFeedback, setAiFeedback] = useState('');
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiHint, setAiHint] = useState('');
+  const [aiSnippet, setAiSnippet] = useState('');
   const [isAILoading, setIsAILoading] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -173,7 +179,9 @@ export default function QuestionDetail() {
     setIsAILoading(true);
     try {
       const data = await getProblemAIReview(Number(id), code);
-      setAiFeedback(data.feedback);
+      setAiSummary(data.summary);
+      setAiHint(data.hint);
+      setAiSnippet(data.snippet);
     } catch (error) {
       toast({
         title: "Error",
@@ -415,9 +423,46 @@ export default function QuestionDetail() {
                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
                           <p className="text-muted-foreground">Analyzing your code...</p>
                         </div>
-                      ) : aiFeedback ? (
-                        <div className="prose prose-sm max-w-none">
-                          <pre className="whitespace-pre-wrap bg-muted/50 p-4 rounded-lg">{aiFeedback}</pre>
+                      ) : aiSummary || aiHint || aiSnippet ? (
+                        <div className="space-y-6">
+                          {aiSummary && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                                <Target className="h-5 w-5" />
+                                Code Quality Summary
+                              </h3>
+                              <p className="text-blue-700">{aiSummary}</p>
+                            </div>
+                          )}
+                          
+                          {aiHint && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <h3 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                                <Lightbulb className="h-5 w-5" />
+                                Helpful Hint
+                              </h3>
+                              <p className="text-green-700">{aiHint}</p>
+                            </div>
+                          )}
+                          
+                          {aiSnippet && (
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                              <h3 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                                <Code className="h-5 w-5" />
+                                Code Snippet
+                              </h3>
+                              <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
+                                <code>{aiSnippet}</code>
+                              </pre>
+                            </div>
+                          )}
+                          
+                          <div className="pt-4 border-t border-border">
+                            <Button onClick={handleAIReview} disabled={!code.trim()} className="gap-2">
+                              <RefreshCw className="h-4 w-4" />
+                              Re-analyze Code
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -442,16 +487,16 @@ export default function QuestionDetail() {
                                 <span>Code quality analysis</span>
                               </li>
                               <li className="flex items-start gap-2">
-                                <BookOpen className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
-                                <span>Personalized learning recommendations</span>
+                                <Lightbulb className="h-4 w-4 mt-0.5 text-yellow-600 flex-shrink-0" />
+                                <span>Helpful hints and suggestions</span>
                               </li>
                               <li className="flex items-start gap-2">
-                                <Youtube className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
-                                <span>YouTube video suggestions</span>
+                                <Code className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                                <span>Code snippet examples</span>
                               </li>
                               <li className="flex items-start gap-2">
-                                <Target className="h-4 w-4 mt-0.5 text-orange-600 flex-shrink-0" />
-                                <span>Practice problem recommendations</span>
+                                <Award className="h-4 w-4 mt-0.5 text-orange-600 flex-shrink-0" />
+                                <span>Performance improvements</span>
                               </li>
                             </ul>
                           </div>

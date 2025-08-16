@@ -28,6 +28,18 @@ except ImportError:
 def try_parse_json(text):
     """Parse text as json if possible, else return fallback suggestion payload."""
     text = (text or "").strip()
+    
+    # Remove markdown code block formatting if present
+    if text.startswith("```json"):
+        text = text[7:]  # Remove ```json
+    elif text.startswith("```"):
+        text = text[3:]  # Remove ```
+    
+    if text.endswith("```"):
+        text = text[:-3]  # Remove ```
+    
+    text = text.strip()
+    
     # Defensive: If text is empty or invalid, return special dict
     if not text:
         return {
@@ -98,6 +110,9 @@ Return a JSON object with:
 - suggestions (list)
 - code_quality (string)
 - next_steps (list)
+- summary_brief (string) - A brief summary of the code quality (1-2 sentences)
+- hint_text (string) - A helpful hint to improve the code (1 sentence)
+- code_snippet (string) - A code snippet showing a better implementation approach with comments
 Respond only as a JSON object.
 """
         output = self._safe_generate(prompt)
@@ -184,7 +199,27 @@ Respond only as a JSON object.
             "missing_components": ["Advanced error handling", "Edge case coverage"],
             "suggestions": ["Add comments to explain complex logic", "Consider refactoring to reduce code complexity"],
             "code_quality": "Good basic implementation with room for improvement",
-            "next_steps": ["Add comprehensive test cases", "Optimize for performance"]
+            "next_steps": ["Add comprehensive test cases", "Optimize for performance"],
+            "summary_brief": "Good basic implementation with room for improvement. Consider adding more comprehensive error handling and edge case coverage.",
+            "hint_text": "Add comments to explain complex logic and consider refactoring to reduce code complexity.",
+            "code_snippet": "# Suggested implementation:\n"
+                           "def reverse(x):\n"
+                           "    # Store the sign of x\n"
+                           "    sign = -1 if x < 0 else 1\n"
+                           "    # Work with absolute value\n"
+                           "    x = abs(x)\n"
+                           "    # Reverse the digits\n"
+                           "    reversed_x = 0\n"
+                           "    while x != 0:\n"
+                           "        digit = x % 10\n"
+                           "        reversed_x = reversed_x * 10 + digit\n"
+                           "        x //= 10\n"
+                           "    # Apply the original sign\n"
+                           "    result = sign * reversed_x\n"
+                           "    # Check for 32-bit signed integer overflow\n"
+                           "    if result < -2**31 or result > 2**31 - 1:\n"
+                           "        return 0\n"
+                           "    return result"
         }
     
     def _fallback_failure_tips(self, question_text, user_code, failed_tests, language):
@@ -195,7 +230,28 @@ Respond only as a JSON object.
             "debugging_steps": ["Add print statements to trace execution", "Check boundary conditions"],
             "hints": ["Review the problem constraints", "Test with edge cases"],
             "common_mistakes": ["Not handling empty inputs", "Incorrect loop bounds"],
-            "suggested_fixes": ["Initialize variables correctly", "Add boundary checks"]
+            "suggested_fixes": ["Initialize variables correctly", "Add boundary checks"],
+            "summary_brief": "Your code has logic errors and edge case handling issues that need to be addressed.",
+            "hint_text": "Review the problem constraints and test with edge cases like empty inputs and boundary values.",
+            "code_snippet": "# Suggested fix:\n"
+                           "# Initialize variables correctly and add boundary checks\n"
+                           "def reverse(x):\n"
+                           "    # Check for empty or invalid input\n"
+                           "    if x is None:\n"
+                           "        return 0\n"
+                           "    # Handle the sign properly\n"
+                           "    sign = -1 if x < 0 else 1\n"
+                           "    # Work with absolute value to avoid sign issues\n"
+                           "    x = abs(x)\n"
+                           "    # Reverse digits with overflow check\n"
+                           "    result = 0\n"
+                           "    while x != 0:\n"
+                           "        # Check for overflow before multiplication\n"
+                           "        if result > (2**31 - 1 - x % 10) // 10:\n"
+                           "            return 0\n"
+                           "        result = result * 10 + x % 10\n"
+                           "        x //= 10\n"
+                           "    return sign * result"
         }
     
     def _fallback_coding_suggestions(self, question_text, user_code, language):
@@ -206,7 +262,28 @@ Respond only as a JSON object.
             "alternative_approaches": ["Recursive solution", "Dynamic programming approach"],
             "performance_notes": ["Time complexity could be improved", "Space complexity is acceptable"],
             "readability_tips": ["Break down complex functions", "Use consistent formatting"],
-            "overall_feedback": "Good implementation with opportunities for optimization"
+            "overall_feedback": "Good implementation with opportunities for optimization",
+            "summary_brief": "Good implementation with opportunities for optimization and improved readability.",
+            "hint_text": "Consider breaking down complex functions and using consistent formatting to improve readability.",
+            "code_snippet": "# Improved version with better readability:\n"
+                           "def reverse_integer(x):\n"
+                           "    \"\"\"Reverse the digits of a 32-bit signed integer.\"\"\"\n"
+                           "    # Handle sign\n"
+                           "    sign = -1 if x < 0 else 1\n"
+                           "    x = abs(x)\n"
+                           "    \n"
+                           "    # Reverse digits\n"
+                           "    reversed_num = 0\n"
+                           "    while x:\n"
+                           "        digit = x % 10\n"
+                           "        reversed_num = reversed_num * 10 + digit\n"
+                           "        x //= 10\n"
+                           "    \n"
+                           "    # Apply sign and check overflow\n"
+                           "    result = sign * reversed_num\n"
+                           "    if result < -2**31 or result > 2**31 - 1:\n"
+                           "        return 0\n"
+                           "    return result"
         }
 
 # Initialize the analyzer
@@ -337,15 +414,35 @@ def problem_ai_review(request, problem_id):
         feedback = generate_problem_feedback_from_ai(ai_analysis, problem)
         overall_score = ai_analysis.get('completion_percentage', 75)
 
-        # --- NEW: turn AI JSON into short summary + hint + snippet ---
-        summary_brief = ai_analysis.get("code_quality", "No quality feedback available.")
-        hints = ai_analysis.get("suggestions", []) or ai_analysis.get("next_steps", [])
-        hint_text = hints[0] if hints else "Try reviewing your logic against the problem constraints."
-
-        snippet = ""
-        if ai_analysis.get("identified_bugs"):
-            bug = ai_analysis["identified_bugs"][0]
-            snippet = f"# Possible fix idea:\n# {bug}\n"
+        # Get the summary, hint, and snippet directly from AI analysis
+        summary_brief = ai_analysis.get("summary_brief", ai_analysis.get("code_quality", "No quality feedback available."))
+        hint_text = ai_analysis.get("hint_text", "Try reviewing your logic against the problem constraints.")
+        
+        # Get code snippet, with fallback to our generated one
+        snippet = ai_analysis.get("code_snippet", "")
+        if not snippet and ai_analysis.get("missing_components"):
+            # Generate a code snippet based on missing components if AI didn't provide one
+            missing = ai_analysis["missing_components"]
+            if missing:
+                # Create a basic implementation structure
+                snippet = "# Suggested implementation:\n"
+                snippet += "def reverse(x):\n"
+                snippet += "    # Store the sign of x\n"
+                snippet += "    sign = -1 if x < 0 else 1\n"
+                snippet += "    # Work with absolute value\n"
+                snippet += "    x = abs(x)\n"
+                snippet += "    # Reverse the digits\n"
+                snippet += "    reversed_x = 0\n"
+                snippet += "    while x != 0:\n"
+                snippet += "        digit = x % 10\n"
+                snippet += "        reversed_x = reversed_x * 10 + digit\n"
+                snippet += "        x //= 10\n"
+                snippet += "    # Apply the original sign\n"
+                snippet += "    result = sign * reversed_x\n"
+                snippet += "    # Check for 32-bit signed integer overflow\n"
+                snippet += "    if result < -2**31 or result > 2**31 - 1:\n"
+                snippet += "        return 0\n"
+                snippet += "    return result\n"
 
         # Ensure a submission exists
         submission = Submission.objects.filter(

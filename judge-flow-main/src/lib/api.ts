@@ -42,6 +42,65 @@ interface SubmitSolutionData {
   language: string;
 }
 
+interface Problem {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  tags: string[];
+  constraints: string;
+  test_cases: {
+    input_data: string;
+    expected_output: string;
+  }[];
+}
+
+interface SubmissionResponse {
+  id: number;
+  problem_id: number;
+  problem_title: string;
+  status: 'accepted' | 'wrong_answer' | 'time_limit_exceeded' | 'runtime_error' | 'pending';
+  language: string;
+  runtime?: number;
+  memory?: number;
+  submitted_at: string;
+  code: string;
+  test_results?: any[];
+}
+
+interface ContestResponse {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  problem_count: number;
+  is_active: boolean;
+  problems?: Problem[];
+}
+
+interface DashboardData {
+  stats: {
+    total_submissions: number;
+    accepted_submissions: number;
+    accuracy: number;
+    total_problems: number;
+    solved_problems: number;
+  };
+  upcoming_contests: {
+    id: number;
+    name: string;
+    start_time: string;
+  }[];
+}
+
+interface UserProfile {
+  user: {
+    id: number;
+    username: string;
+    email: string;
+  };
+}
+
 interface AIReviewData {
   submission_id?: number;
   code?: string;
@@ -60,7 +119,9 @@ interface ComprehensiveAIReviewResponse {
 interface ProblemAIReviewResponse {
   feedback: string;
   overall_score: number;
-  ai_analysis?: any;
+  summary: string;
+  hint: string;
+  snippet: string;
 }
 
 interface ProgressDataPoint {
@@ -129,7 +190,7 @@ export const logout = async () => {
   return response.json();
 };
 
-export const getProfile = async () => {
+export const getProfile = async (): Promise<UserProfile> => {
   const response = await fetch(`${API_BASE_URL}/accounts/profile/`, {
     method: 'GET',
     headers: {
@@ -145,7 +206,7 @@ export const getProfile = async () => {
   return response.json();
 };
 
-export const getDashboardData = async () => {
+export const getDashboardData = async (): Promise<DashboardData> => {
   const response = await fetch(`${API_BASE_URL}/accounts/dashboard/`, {
     method: 'GET',
     headers: {
@@ -183,7 +244,7 @@ export const getProblems = async (params?: { search?: string; tags?: string; dif
   return response.json();
 };
 
-export const getProblem = async (id: number) => {
+export const getProblem = async (id: number): Promise<{ problem: Problem }> => {
   const response = await fetch(`${API_BASE_URL}/problems/${id}/`, {
     method: 'GET',
     headers: {
@@ -217,7 +278,7 @@ export const submitSolution = async (data: SubmitSolutionData) => {
   return response.json();
 };
 
-export const getUserSubmissions = async () => {
+export const getUserSubmissions = async (): Promise<{ submissions: SubmissionResponse[] }> => {
   const response = await fetch(`${API_BASE_URL}/problems/submissions/`, {
     method: 'GET',
     headers: {
@@ -250,7 +311,7 @@ export const getSubmission = async (submissionId: number) => {
 };
 
 // Contests APIs
-export const getContests = async () => {
+export const getContests = async (): Promise<{ contests: ContestResponse[] }> => {
   const response = await fetch(`${API_BASE_URL}/contests/`, {
     method: 'GET',
     headers: {
@@ -266,7 +327,7 @@ export const getContests = async () => {
   return response.json();
 };
 
-export const getContest = async (id: number) => {
+export const getContest = async (id: number): Promise<{ contest: ContestResponse }> => {
   const response = await fetch(`${API_BASE_URL}/contests/${id}/`, {
     method: 'GET',
     headers: {

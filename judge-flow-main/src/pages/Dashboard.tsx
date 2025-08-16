@@ -20,7 +20,7 @@ import { formatDistanceToNow } from 'date-fns';
 import CountdownTimer from '@/components/common/CountdownTimer';
 
 interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
 }
@@ -34,7 +34,7 @@ interface Stats {
 }
 
 interface Contest {
-  id: string;
+  id: number;
   name: string;
   start_time: string;
 }
