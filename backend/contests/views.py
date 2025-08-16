@@ -51,9 +51,12 @@ def contest_detail(request, contest_id):
         return JsonResponse({'contest': contest_data})
 
 @csrf_exempt
-@login_required
 def create_contest(request):
     if request.method == 'POST':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+            
         data = json.loads(request.body)
         name = data.get('name')
         start_time_str = data.get('start_time')
@@ -106,9 +109,12 @@ def create_contest(request):
 
 
 @csrf_exempt
-@login_required
 def contest_submissions(request, contest_id):
     if request.method == 'GET':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+            
         contest = get_object_or_404(Contest, id=contest_id)
         
         # Get submissions for this contest by the current user
@@ -133,9 +139,12 @@ def contest_submissions(request, contest_id):
         return JsonResponse({'submissions': submissions_data})
 
 @csrf_exempt
-@login_required
 def submit_contest_solution(request):
     if request.method == 'POST':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+            
         data = json.loads(request.body)
         contest_id = data.get('contest_id')
         problem_id = data.get('problem_id')

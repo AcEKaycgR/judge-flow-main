@@ -18,7 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import JsonResponse
 from . import views
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    return JsonResponse({'message': 'CSRF cookie set'})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +35,7 @@ urlpatterns = [
     path('api/ai-review/', include('ai_review.urls')),
     
     path('api/health/', views.health_check, name='health_check'),
+    path('api/csrf/', get_csrf_token, name='csrf'),
 ]
 
 # Serve static files during development

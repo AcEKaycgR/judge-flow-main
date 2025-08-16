@@ -151,7 +151,7 @@ export const login = async (data: LoginData) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -169,7 +169,7 @@ export const signup = async (data: SignupData) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -186,7 +186,7 @@ export const logout = async () => {
       'Content-Type': 'application/json',
       'X-CSRFToken': getCsrfToken() || '',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -202,7 +202,7 @@ export const getProfile = async (): Promise<UserProfile> => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -218,7 +218,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -240,7 +240,7 @@ export const getProblems = async (params?: { search?: string; tags?: string; dif
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -256,7 +256,7 @@ export const getProblem = async (id: number): Promise<{ problem: Problem }> => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -274,7 +274,7 @@ export const submitSolution = async (data: SubmitSolutionData) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -290,7 +290,7 @@ export const getUserSubmissions = async (): Promise<{ submissions: SubmissionRes
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -306,7 +306,7 @@ export const getSubmission = async (submissionId: number) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -323,7 +323,7 @@ export const getContests = async (): Promise<{ contests: ContestResponse[] }> =>
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -339,7 +339,7 @@ export const getContest = async (id: number): Promise<{ contest: ContestResponse
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -355,7 +355,7 @@ export const getContestSubmissions = async (contestId: number) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -373,7 +373,7 @@ export const createContest = async (data: any) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -391,7 +391,7 @@ export const submitContestSolution = async (data: any) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -410,7 +410,7 @@ export const runCode = async (data: RunCodeData) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -428,7 +428,7 @@ export const getAIReview = async (data: AIReviewData) => {
       'X-CSRFToken': getCsrfToken() || '',
     },
     body: JSON.stringify(data),
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -445,7 +445,7 @@ export const getComprehensiveAIReview = async (): Promise<ComprehensiveAIReviewR
       'Content-Type': 'application/json',
       'X-CSRFToken': getCsrfToken() || '',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -462,7 +462,7 @@ export const getProblemAIReview = async (problemId: number, code: string): Promi
       'Content-Type': 'application/json',
       'X-CSRFToken': getCsrfToken() || '',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
     body: JSON.stringify({ code }),
   });
   
@@ -480,7 +480,7 @@ export const getUserProgress = async (): Promise<UserProgressResponse> => {
       'Content-Type': 'application/json',
       'X-CSRFToken': getCsrfToken() || '',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   
   if (!response.ok) {

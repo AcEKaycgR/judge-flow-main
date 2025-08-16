@@ -73,9 +73,12 @@ def problem_detail(request, problem_id):
         return JsonResponse({'problem': problem_data})
 
 @csrf_exempt
-@login_required
 def user_submissions(request):
     if request.method == 'GET':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+            
         submissions = Submission.objects.filter(user=request.user).select_related('problem').order_by('-submitted_at')
         
         submissions_data = []
@@ -93,9 +96,12 @@ def user_submissions(request):
         return JsonResponse({'submissions': submissions_data})
 
 @csrf_exempt
-@login_required
 def submission_detail(request, submission_id):
     if request.method == 'GET':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+            
         submission = get_object_or_404(Submission, id=submission_id, user=request.user)
         
         submission_data = {

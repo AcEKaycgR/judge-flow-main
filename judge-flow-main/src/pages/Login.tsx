@@ -36,6 +36,12 @@ export default function Login() {
 
     setLoading(true);
     try {
+      // First get CSRF token
+      await fetch('/api/csrf/', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
       const response = await apiLogin({
         username: formData.email,
         password: formData.password
