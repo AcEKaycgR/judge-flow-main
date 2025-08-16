@@ -31,11 +31,11 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 # Copy project
 COPY . /app/
 
-# Make startup script executable
-RUN chmod +x /app/startup.sh
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["/app/startup.sh"]
+# Run the application using Gunicorn
+CMD ["gunicorn", "judgeflow.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
