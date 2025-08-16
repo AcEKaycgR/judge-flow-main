@@ -353,7 +353,7 @@ def problem_ai_review(request, problem_id):
             problem=problem
         ).first()
         if not submission:
-            submission = Submission.objects.create(
+            submission = Submission.objects.get_or_create(
                 user=request.user,
                 problem=problem,
                 code=code,
@@ -362,11 +362,14 @@ def problem_ai_review(request, problem_id):
             )
 
         # Save AI review result
-        AIReviewResult.objects.create(
+        AIReviewResult.objects.update_or_create(
             submission=submission,
-            feedback=feedback,
-            overall_score=overall_score
+            defaults={
+                "feedback": feedback,
+                "overall_score": overall_score,
+            }
         )
+
 
         # Final response
         response_data = {
