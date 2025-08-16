@@ -13,7 +13,8 @@ import {
   RefreshCw,
   TrendingUp,
   Award,
-  BarChart
+  BarChart,
+  AlertCircle
 } from 'lucide-react';
 import { getComprehensiveAIReview, getUserProgress } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +46,8 @@ export default function AIReview() {
     queryKey: ['user-progress'],
     queryFn: getUserProgress,
   });
+
+  const recommendations = data?.recommendations;
 
   useEffect(() => {
     if (data?.feedback) {
@@ -153,7 +156,7 @@ export default function AIReview() {
           </Card>
         )}
 
-        {!isLoading && !progressLoading && !error && !progressError && feedbackSections.length > 0 && (
+        {!isLoading && !progressLoading && !error && !progressError && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Panel - Stats and Assessment */}
             <div className="lg:col-span-1 space-y-6">
@@ -199,7 +202,10 @@ export default function AIReview() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    {feedbackSections.find(s => s.title.includes('Assessment'))?.content}
+                    {data?.feedback ? 
+                      data.feedback.split('\n').find(line => line.includes('Excellent progress') || line.includes('Continue practicing') || line.includes('Focus on understanding')) ||
+                      'Keep up the good work and continue practicing regularly.' :
+                      'Keep up the good work and continue practicing regularly.'}
                   </p>
                 </CardContent>
               </Card>
@@ -216,9 +222,15 @@ export default function AIReview() {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {feedbackSections.find(s => s.title.includes('Patterns'))?.content.split('\n').map((line, i) => (
-                      <li key={i}>{line.replace(/\d+\.\s\*\*/g, '').replace(/\*\*/g, '')}</li>
-                    ))}
+                    {data?.feedback ? 
+                      data.feedback.split('\n')
+                        .filter(line => line.startsWith('- ') && (line.includes('logic') || line.includes('efficiency') || line.includes('complexity')))
+                        .slice(0, 5)
+                        .map((line, i) => (
+                          <li key={i}>{line.replace('- ', '')}</li>
+                        )) : 
+                      <li>Consistent practice patterns observed</li>
+                    }
                   </ul>
                 </CardContent>
               </Card>
@@ -231,26 +243,29 @@ export default function AIReview() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {feedbackSections.find(s => s.title.includes('Recommendations'))?.content.split('###').map((subSection, i) => {
-                    if (!subSection.trim()) return null;
-                    const [title, ...contentLines] = subSection.trim().split('\n');
-                    const content = contentLines.join('\n');
-                    return (
-                      <div key={i} className="mb-4">
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          {title.includes('YouTube') && <Youtube className="h-4 w-4 text-red-600" />}
-                          {title.includes('Courses') && <Play className="h-4 w-4 text-green-600" />}
-                          {title.includes('Books') && <BookOpen className="h-4 w-4 text-purple-600" />}
-                          {title}
-                        </h3>
-                        <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                          {content.split('\n').map((line, j) => (
-                            <li key={j}>{line.replace('-', '').trim()}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Play className="h-4 w-4 text-green-600" />
+                        Focus Areas
+                      </h3>
+                      <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                        {data?.feedback ? 
+                          data.feedback.split('\n')
+                            .filter(line => line.startsWith('- ') && !line.includes('YouTube') && !line.includes('Courses') && !line.includes('Books'))
+                            .slice(0, 3)
+                            .map((line, i) => (
+                              <li key={i}>{line.replace('- ', '')}</li>
+                            )) : 
+                          <>
+                            <li>Focus on understanding problem requirements before coding</li>
+                            <li>Practice more easy-level problems to build confidence</li>
+                            <li>Review fundamental programming concepts</li>
+                          </>
+                        }
+                      </ul>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -263,9 +278,150 @@ export default function AIReview() {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {feedbackSections.find(s => s.title.includes('Problems'))?.content.split('\n').map((line, i) => (
-                      <li key={i}>{line.replace(/\d+\.\s/, '')}</li>
-                    ))}
+                    {recommendations?.practice_problems?.slice(0, 5).map((problem, i) => (
+                      <li key={i}>{problem}</li>
+                    )) || (
+                      data?.feedback ? 
+                        data.feedback.split('\n')
+                          .filter(line => line.startsWith('- ') && (line.includes('Array') || line.includes('String') || line.includes('Tree') || line.includes('Dynamic')))
+                          .slice(0, 5)
+                          .map((line, i) => (
+                            <li key={i}>{line.replace('- ', '')}</li>
+                          )) : 
+                        <>
+                          <li>Array Manipulation</li>
+                          <li>String Processing</li>
+                          <li>Dynamic Programming</li>
+                          <li>Tree Traversal</li>
+                          <li>Graph Algorithms</li>
+                        </>
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-indigo-600" />
+                    Recommended Courses
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recommendations?.courses?.slice(0, 3).map((course, i) => (
+                      <a 
+                        key={i} 
+                        href={course.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block p-3 rounded-lg border hover:bg-muted transition-colors"
+                      >
+                        <h3 className="font-medium text-foreground">{course.title}</h3>
+                      </a>
+                    )) || (
+                      data?.feedback ? 
+                        data.feedback.split('\n')
+                          .filter(line => line.startsWith('- ') && (line.includes('Algorithms') || line.includes('Data Structures') || line.includes('Programming')))
+                          .slice(0, 3)
+                          .map((line, i) => {
+                            const courseTitle = line.replace('- ', '');
+                            return (
+                              <div key={i} className="p-3 rounded-lg border">
+                                <h3 className="font-medium text-foreground">{courseTitle}</h3>
+                              </div>
+                            );
+                          }) : 
+                        <>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">Data Structures and Algorithms</h3>
+                          </div>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">System Design Fundamentals</h3>
+                          </div>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">Advanced Python Programming</h3>
+                          </div>
+                        </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Youtube className="h-5 w-5 text-red-600" />
+                    Suggested Videos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recommendations?.youtube_videos?.slice(0, 3).map((video, i) => (
+                      <a 
+                        key={i} 
+                        href={video.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block p-3 rounded-lg border hover:bg-muted transition-colors"
+                      >
+                        <h3 className="font-medium text-foreground">{video.title}</h3>
+                      </a>
+                    )) || (
+                      data?.feedback ? 
+                        data.feedback.split('\n')
+                          .filter(line => line.startsWith('- ') && (line.includes('Video') || line.includes('Tutorial') || line.includes('Explained')))
+                          .slice(0, 3)
+                          .map((line, i) => {
+                            const videoTitle = line.replace('- ', '');
+                            return (
+                              <div key={i} className="p-3 rounded-lg border">
+                                <h3 className="font-medium text-foreground">{videoTitle}</h3>
+                              </div>
+                            );
+                          }) : 
+                        <>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">Mastering Arrays and Strings</h3>
+                          </div>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">Dynamic Programming Essentials</h3>
+                          </div>
+                          <div className="p-3 rounded-lg border">
+                            <h3 className="font-medium text-foreground">Tree and Graph Algorithms</h3>
+                          </div>
+                        </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    Common Mistakes to Avoid
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {recommendations?.errors_to_avoid?.slice(0, 5).map((error, i) => (
+                      <li key={i}>{error}</li>
+                    )) || (
+                      data?.feedback ? 
+                        data.feedback.split('\n')
+                          .filter(line => line.startsWith('- ') && (line.includes('error') || line.includes('mistake') || line.includes('avoid')))
+                          .slice(0, 5)
+                          .map((line, i) => (
+                            <li key={i}>{line.replace('- ', '')}</li>
+                          )) : 
+                        <>
+                          <li>Not handling edge cases properly</li>
+                          <li>Inefficient time complexity</li>
+                          <li>Memory leaks in recursive solutions</li>
+                          <li>Off-by-one errors in loops</li>
+                        </>
+                    )}
                   </ul>
                 </CardContent>
               </Card>

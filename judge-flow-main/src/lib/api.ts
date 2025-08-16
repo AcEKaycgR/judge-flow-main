@@ -114,6 +114,12 @@ interface ComprehensiveAIReviewResponse {
   total_submissions: number;
   accepted_submissions: number;
   accuracy_rate: number;
+  recommendations?: {
+    practice_problems?: string[];
+    courses?: { title: string; url: string }[];
+    youtube_videos?: { title: string; url: string }[];
+    errors_to_avoid?: string[];
+  };
 }
 
 interface ProblemAIReviewResponse {

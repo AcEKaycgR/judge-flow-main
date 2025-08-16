@@ -18,7 +18,14 @@ try:
     api_key = "AIzaSyAo_g2y-0RJqCtYRDAjUmlL23hjLg3aSG8"
     if api_key:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Configure model with longer timeout
+        model = genai.GenerativeModel('gemini-2.5-flash', 
+                                    generation_config={
+                                        "max_output_tokens": 2048,
+                                        "temperature": 0.7,
+                                        "top_p": 0.95,
+                                        "top_k": 40
+                                    })
     else:
         model = None
 except ImportError:
@@ -79,7 +86,9 @@ class GeminiCodeAnalyzer:
         if not model:
             return None
         try:
-            response = model.generate_content(prompt)
+            # Call Gemini with longer timeout
+            response = model.generate_content(prompt, 
+                                            request_options={"timeout": 60})  # 60 seconds timeout
             # The response object has .text in recent versions,
             # but we also safeguard if it's missing
             if hasattr(response, "text") and response.text:
@@ -115,10 +124,15 @@ Return a JSON object with:
 - code_snippet (string) - A code snippet showing a better implementation approach with comments
 Respond only as a JSON object.
 """
+        print(f"[DEBUG] Sending prompt to Gemini (length: {len(prompt)} chars)")
         output = self._safe_generate(prompt)
+        print(f"[DEBUG] Received response from Gemini: {output}")
         if not output:
+            print("[DEBUG] No output from Gemini, using fallback")
             return self._fallback_code_analysis(question_text, user_code, language)
-        return try_parse_json(output)
+        result = try_parse_json(output)
+        print(f"[DEBUG] Parsed JSON result: {result}")
+        return result
 
     def provide_failure_tips(self, question_text, user_code, failed_tests, language):
         failed_test_info = "\n".join(
@@ -353,21 +367,83 @@ def comprehensive_ai_review(request):
 
         Based on this, recommend the following in JSON:
         - practice_problems: list of problem topics or titles to attempt next
-        - courses: list of {{ "title": str, "url": str }}
-        - youtube_videos: list of {{ "title": str, "url": str }}
+        - courses: list of {{"title": str, "url": str}}
+        - youtube_videos: list of {{"title": str, "url": str}}
         - errors_to_avoid: list of common mistakes the user repeatedly makes
+        Respond only as a JSON object.
         """
         recommendations_output = analyzer._safe_generate(recommendations_prompt)
         recommendations = try_parse_json(recommendations_output)
+        
+        # Ensure recommendations has the proper structure
+        if not isinstance(recommendations, dict):
+            recommendations = {}
+            
+        # Provide fallback recommendations if AI didn't return proper data
+        if "practice_problems" not in recommendations or not recommendations["practice_problems"]:
+            recommendations["practice_problems"] = [
+                "Array Manipulation",
+                "String Processing",
+                "Dynamic Programming",
+                "Tree Traversal",
+                "Graph Algorithms"
+            ]
+            
+        if "courses" not in recommendations or not recommendations["courses"]:
+            recommendations["courses"] = [
+                {"title": "Data Structures and Algorithms", "url": "https://example.com/data-structures"},
+                {"title": "System Design Fundamentals", "url": "https://example.com/system-design"},
+                {"title": "Advanced Python Programming", "url": "https://example.com/advanced-python"}
+            ]
+            
+        if "youtube_videos" not in recommendations or not recommendations["youtube_videos"]:
+            recommendations["youtube_videos"] = [
+                {"title": "Mastering Arrays and Strings", "url": "https://youtube.com/watch?v=example1"},
+                {"title": "Dynamic Programming Essentials", "url": "https://youtube.com/watch?v=example2"},
+                {"title": "Tree and Graph Algorithms", "url": "https://youtube.com/watch?v=example3"}
+            ]
+            
+        if "errors_to_avoid" not in recommendations or not recommendations["errors_to_avoid"]:
+            recommendations["errors_to_avoid"] = [
+                "Not handling edge cases properly",
+                "Inefficient time complexity",
+                "Memory leaks in recursive solutions",
+                "Off-by-one errors in loops"
+            ]
 
-        # Create or update progress snapshot
-        ProgressSnapshot.objects.create(
-            user=request.user,
-            total_submissions=total_submissions,
-            accepted_submissions=accepted_submissions,
-            accuracy_rate=accuracy_rate,
-            category_breakdown=category_stats
-        )
+        # Create or update progress snapshot only if there's a significant change
+        # or if it's been more than a day since the last snapshot
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get the latest snapshot for this user
+        latest_snapshot = ProgressSnapshot.objects.filter(user=request.user).order_by('-snapshot_date').first()
+        
+        should_create_snapshot = False
+        if not latest_snapshot:
+            # No previous snapshot, create one
+            should_create_snapshot = True
+        else:
+            # Check if there's a significant change or if it's been more than a day
+            time_diff = timezone.now() - latest_snapshot.snapshot_date
+            if time_diff > timedelta(days=1):
+                # More than a day since last snapshot, create new one
+                should_create_snapshot = True
+            else:
+                # Check for significant changes in stats
+                if (latest_snapshot.total_submissions != total_submissions or 
+                    latest_snapshot.accepted_submissions != accepted_submissions or
+                    abs(float(latest_snapshot.accuracy_rate) - accuracy_rate) > 1.0):
+                    should_create_snapshot = True
+        
+        if should_create_snapshot:
+            ProgressSnapshot.objects.create(
+                user=request.user,
+                total_submissions=total_submissions,
+                accepted_submissions=accepted_submissions,
+                accuracy_rate=accuracy_rate,
+                category_breakdown=category_stats
+            )
         
         # Final response
         response_data = {
@@ -494,8 +570,11 @@ def user_progress(request):
     Get user progress data for visualization.
     """
     try:
-        # Get progress snapshots for the user
-        snapshots = ProgressSnapshot.objects.filter(user=request.user).order_by('snapshot_date')
+        # Get progress snapshots for the user, limited to last 30 entries
+        snapshots = ProgressSnapshot.objects.filter(user=request.user).order_by('-snapshot_date')[:30]
+        # Reverse to show chronological order
+        snapshots = list(snapshots)
+        snapshots.reverse()
         
         progress_data = []
         for snapshot in snapshots:
@@ -507,7 +586,7 @@ def user_progress(request):
             })
         
         # Get latest category breakdown
-        latest_snapshot = snapshots.last()
+        latest_snapshot = snapshots[-1] if snapshots else None
         category_breakdown = latest_snapshot.category_breakdown if latest_snapshot else {}
         
         response_data = {
