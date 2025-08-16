@@ -48,6 +48,33 @@ interface AIReviewData {
   problem_text?: string;
 }
 
+interface ComprehensiveAIReviewResponse {
+  feedback: string;
+  overall_score: number;
+  category_scores: Record<string, { total: number; solved: number }>;
+  total_submissions: number;
+  accepted_submissions: number;
+  accuracy_rate: number;
+}
+
+interface ProblemAIReviewResponse {
+  feedback: string;
+  overall_score: number;
+  ai_analysis?: any;
+}
+
+interface ProgressDataPoint {
+  date: string;
+  total_submissions: number;
+  accepted_submissions: number;
+  accuracy_rate: number;
+}
+
+interface UserProgressResponse {
+  progress_data: ProgressDataPoint[];
+  category_breakdown: Record<string, { total: number; solved: number }>;
+}
+
 // Auth APIs
 export const login = async (data: LoginData) => {
   const response = await fetch(`${API_BASE_URL}/accounts/login/`, {
@@ -344,7 +371,7 @@ export const getAIReview = async (data: AIReviewData) => {
   return response.json();
 };
 
-export const getComprehensiveAIReview = async () => {
+export const getComprehensiveAIReview = async (): Promise<ComprehensiveAIReviewResponse> => {
   const response = await fetch(`${API_BASE_URL}/ai-review/comprehensive-ai-review/`, {
     method: 'POST',
     headers: {
@@ -361,8 +388,8 @@ export const getComprehensiveAIReview = async () => {
   return response.json();
 };
 
-export const getProblemAIReview = async (problemId: number, code: string) => {
-  const response = await fetch(`${API_BASE_URL}/problems/${problemId}/ai-review/`, {
+export const getProblemAIReview = async (problemId: number, code: string): Promise<ProblemAIReviewResponse> => {
+  const response = await fetch(`${API_BASE_URL}/ai-review/problems/${problemId}/ai-review/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -374,6 +401,23 @@ export const getProblemAIReview = async (problemId: number, code: string) => {
   
   if (!response.ok) {
     throw new Error('Failed to get problem AI review');
+  }
+  
+  return response.json();
+};
+
+export const getUserProgress = async (): Promise<UserProgressResponse> => {
+  const response = await fetch(`${API_BASE_URL}/ai-review/user-progress/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
+    },
+    credentials: 'same-origin',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to get user progress');
   }
   
   return response.json();

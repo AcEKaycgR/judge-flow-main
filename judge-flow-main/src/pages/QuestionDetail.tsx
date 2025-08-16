@@ -28,7 +28,7 @@ import CodeEditor from '@/components/common/CodeEditor';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Language } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { getProblem, getUserSubmissions } from '@/lib/api';
+import { getProblem, getUserSubmissions, getProblemAIReview } from '@/lib/api';
 
 interface Question {
   id: number;
@@ -56,6 +56,7 @@ export default function QuestionDetail() {
   const [isAILoading, setIsAILoading] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('code');
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isExamplesOpen, setIsExamplesOpen] = useState(true);
@@ -203,7 +204,7 @@ export default function QuestionDetail() {
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ai" className="gap-2">
+              <Button variant="ai" className="gap-2" onClick={() => setActiveTab('ai-review')}>
                 <Brain className="h-4 w-4" />
                 AI Review
               </Button>
@@ -321,7 +322,7 @@ export default function QuestionDetail() {
           {/* Right Panel - Code Editor */}
           <div className="bg-background">
             <div className="p-6 h-full">
-              <Tabs defaultValue="code" className="h-full flex flex-col">
+              <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="code" className="h-full flex flex-col">
                 <TabsList className="grid w-full grid-cols-3 mb-4">
                   <TabsTrigger value="code" className="flex items-center gap-2">
                     <PlayCircle className="h-4 w-4" />

@@ -1,53 +1,71 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
-  ChevronLeft, 
   Brain, 
   Play, 
   BookOpen, 
   Youtube, 
   Target,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Award,
+  BarChart
 } from 'lucide-react';
-import { getComprehensiveAIReview } from '@/lib/api';
+import { getComprehensiveAIReview, getUserProgress } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface FeedbackSection {
   title: string;
   content: string;
 }
 
+interface ProgressDataPoint {
+  date: string;
+  total_submissions: number;
+  accepted_submissions: number;
+  accuracy_rate: number;
+}
+
 export default function AIReview() {
-  const { submissionId } = useParams();
-  const location = useLocation();
   const { toast } = useToast();
   const [feedbackSections, setFeedbackSections] = useState<FeedbackSection[]>([]);
+  const [stats, setStats] = useState<any>(null);
 
-  // Check if feedback is passed via location state
-  const locationState = location.state as { feedback?: string } | null;
-  const hasLocationFeedback = !!locationState?.feedback;
-
-  // Fetch comprehensive AI review only if no location feedback
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['comprehensive-ai-review'],
     queryFn: getComprehensiveAIReview,
-    enabled: !hasLocationFeedback,
   });
 
-  // Parse feedback into sections
+  const { data: progressData, isLoading: progressLoading, error: progressError } = useQuery({
+    queryKey: ['user-progress'],
+    queryFn: getUserProgress,
+  });
+
   useEffect(() => {
-    if (locationState?.feedback) {
-      const sections = parseFeedbackIntoSections(locationState.feedback);
-      setFeedbackSections(sections);
-    } else if (data?.feedback) {
+    if (data?.feedback) {
       const sections = parseFeedbackIntoSections(data.feedback);
       setFeedbackSections(sections);
+      
+      // Extract stats for visualization
+      const statsSection = sections.find(s => s.title.includes('Statistics'));
+      if (statsSection) {
+        const lines = statsSection.content.split('\n');
+        const totalSubmissions = parseInt(lines[0].split(': ')[1] || '0');
+        const acceptedSolutions = parseInt(lines[1].split(': ')[1] || '0');
+        const accuracyRate = parseFloat(lines[2].split(': ')[1]?.replace('%', '') || '0');
+        setStats({
+          totalSubmissions,
+          acceptedSolutions,
+          accuracyRate,
+        });
+      }
     }
-  }, [data, locationState]);
+  }, [data]);
 
   const parseFeedbackIntoSections = (feedback: string): FeedbackSection[] => {
     const sections: FeedbackSection[] = [];
@@ -58,44 +76,24 @@ export default function AIReview() {
     
     for (const line of lines) {
       if (line.startsWith('## ')) {
-        // Save previous section
         if (currentTitle && currentContent) {
-          sections.push({
-            title: currentTitle,
-            content: currentContent.trim()
-          });
+          sections.push({ title: currentTitle, content: currentContent.trim() });
         }
-        
-        // Start new section
         currentTitle = line.replace('## ', '').trim();
         currentContent = '';
       } else if (line.startsWith('### ')) {
-        // Save previous section
         if (currentTitle && currentContent) {
-          sections.push({
-            title: currentTitle,
-            content: currentContent.trim()
-          });
+          sections.push({ title: currentTitle, content: currentContent.trim() });
         }
-        
-        // Start new section
         currentTitle = line.replace('### ', '').trim();
         currentContent = '';
       } else {
-        if (currentContent) {
-          currentContent += '\n' + line;
-        } else {
-          currentContent = line;
-        }
+        currentContent += '\n' + line;
       }
     }
     
-    // Save last section
     if (currentTitle && currentContent) {
-      sections.push({
-        title: currentTitle,
-        content: currentContent.trim()
-      });
+      sections.push({ title: currentTitle, content: currentContent.trim() });
     }
     
     return sections;
@@ -105,45 +103,43 @@ export default function AIReview() {
     refetch();
   };
 
+  // Prepare chart data from progress data
+  const chartData = progressData?.progress_data?.map((point: ProgressDataPoint) => ({
+    date: new Date(point.date).toLocaleDateString(),
+    total: point.total_submissions,
+    accepted: point.accepted_submissions,
+    accuracy: point.accuracy_rate,
+  })) || [];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
-              <Link to="/submissions">
-                <Button variant="ghost" size="sm">
-                  <ChevronLeft className="h-4 w-4" />
-                  Back to Submissions
-                </Button>
-              </Link>
-              <div className="h-4 border-l border-border"></div>
-              <div className="flex items-center gap-3">
-                <div className="bg-purple-100 p-2 rounded-lg">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h1 className="font-semibold">AI Code Review</h1>
-                  <p className="text-sm text-muted-foreground">Comprehensive analysis of your coding patterns</p>
-                </div>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+                <Brain className="h-8 w-8 text-primary" />
+                Comprehensive AI Review
+              </h1>
+              <p className="text-muted-foreground">
+                An overview of your coding performance and personalized recommendations.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || progressLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading || progressLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading && (
+        {(isLoading || progressLoading) && (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         )}
 
-        {error && (
+        {(error || progressError) && (
           <Card className="border-destructive/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
@@ -152,130 +148,132 @@ export default function AIReview() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-destructive">
-                Failed to load AI review. Please try again later.
-              </p>
+              <p className="text-destructive">Failed to load AI review. Please try again later.</p>
             </CardContent>
           </Card>
         )}
 
-        {!isLoading && !error && feedbackSections.length > 0 && (
-          <div className="space-y-6">
-            {feedbackSections.map((section, index) => (
-              <Card key={index}>
+        {!isLoading && !progressLoading && !error && !progressError && feedbackSections.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Panel - Stats and Assessment */}
+            <div className="lg:col-span-1 space-y-6">
+              {stats && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart className="h-5 w-5 text-blue-600" />
+                      Your Statistics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="total" fill="#8884d8" name="Total Submissions" />
+                          <Bar dataKey="accepted" fill="#82ca9d" name="Accepted" />
+                        </RechartsBarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Accuracy</span>
+                        <span className="text-sm font-medium">{stats.accuracyRate.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={stats.accuracyRate} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {section.title.includes('Code Review') && <Brain className="h-5 w-5 text-purple-600" />}
-                    {section.title.includes('Statistics') && <Target className="h-5 w-5 text-blue-600" />}
-                    {section.title.includes('Languages') && <Play className="h-5 w-5 text-green-600" />}
-                    {section.title.includes('Issues') && <Play className="h-5 w-5 text-yellow-600" />}
-                    {section.title.includes('Recommendations') && <BookOpen className="h-5 w-5 text-indigo-600" />}
-                    {section.title.includes('Resources') && <Youtube className="h-5 w-5 text-red-600" />}
-                    {section.title.includes('Problems') && <Target className="h-5 w-5 text-orange-600" />}
-                    {section.title.includes('Assessment') && <Brain className="h-5 w-5 text-purple-600" />}
-                    {section.title}
+                    <Award className="h-5 w-5 text-yellow-600" />
+                    Overall Assessment
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {section.title === 'Learning Resources' ? (
-                    <div className="space-y-3">
-                      {section.content.split('\n').map((line, i) => {
-                        if (line.includes('YouTube')) {
-                          return (
-                            <div key={i} className="flex items-start gap-3 p-3 bg-red-50/50 border border-red-200 rounded-lg">
-                              <Youtube className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="font-medium">{line.split(':')[0]}</p>
-                                <a 
-                                  href={line.includes('http') ? line.match(/https?:\/\/[^\s]+/)?.[0] || '#' : '#'} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-red-600 hover:underline"
-                                >
-                                  {line.includes('http') ? 'Watch on YouTube' : 'View Resource'}
-                                </a>
-                              </div>
-                            </div>
-                          );
-                        } else if (line.includes('Course')) {
-                          return (
-                            <div key={i} className="flex items-start gap-3 p-3 bg-indigo-50/50 border border-indigo-200 rounded-lg">
-                              <BookOpen className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="font-medium">{line.split(':')[0]}</p>
-                                <p className="text-sm text-muted-foreground">{line.split(':')[1]?.trim() || 'View Course'}</p>
-                              </div>
-                            </div>
-                          );
-                        } else if (line.includes('Book')) {
-                          return (
-                            <div key={i} className="flex items-start gap-3 p-3 bg-purple-50/50 border border-purple-200 rounded-lg">
-                              <BookOpen className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="font-medium">{line.split(':')[0]}</p>
-                                <p className="text-sm text-muted-foreground">{line.split(':')[1]?.trim() || 'View Book'}</p>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <p key={i} className="text-muted-foreground">
-                            {line}
-                          </p>
-                        );
-                      })}
-                    </div>
-                  ) : section.title === 'Practice Problems' ? (
-                    <div className="space-y-3">
-                      <p className="text-muted-foreground mb-3">
-                        Practice these problems to improve your skills:
-                      </p>
-                      {section.content.split('\n').map((line, i) => {
-                        if (line.trim() && line.includes('-')) {
-                          const problem = line.replace('-', '').trim();
-                          return (
-                            <div key={i} className="flex items-center gap-3 p-3 bg-orange-50/50 border border-orange-200 rounded-lg">
-                              <Target className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                              <p className="font-medium">{problem}</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
-                  ) : (
-                    <div className="prose prose-sm max-w-none">
-                      {section.content.split('\n').map((line, i) => {
-                        if (line.startsWith('- ')) {
-                          return (
-                            <li key={i} className="ml-4">
-                              {line.replace('- ', '')}
-                            </li>
-                          );
-                        } else if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ')) {
-                          return (
-                            <li key={i} className="ml-4">
-                              {line.replace(/^\d+\.\s/, '')}
-                            </li>
-                          );
-                        } else if (line.trim()) {
-                          return (
-                            <p key={i} className="text-muted-foreground">
-                              {line}
-                            </p>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
-                  )}
+                  <p className="text-muted-foreground">
+                    {feedbackSections.find(s => s.title.includes('Assessment'))?.content}
+                  </p>
                 </CardContent>
               </Card>
-            ))}
+            </div>
+
+            {/* Right Panel - Recommendations */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    Common Patterns Identified
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {feedbackSections.find(s => s.title.includes('Patterns'))?.content.split('\n').map((line, i) => (
+                      <li key={i}>{line.replace(/\d+\.\s\*\*/g, '').replace(/\*\*/g, '')}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-indigo-600" />
+                    Personalized Learning Recommendations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {feedbackSections.find(s => s.title.includes('Recommendations'))?.content.split('###').map((subSection, i) => {
+                    if (!subSection.trim()) return null;
+                    const [title, ...contentLines] = subSection.trim().split('\n');
+                    const content = contentLines.join('\n');
+                    return (
+                      <div key={i} className="mb-4">
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          {title.includes('YouTube') && <Youtube className="h-4 w-4 text-red-600" />}
+                          {title.includes('Courses') && <Play className="h-4 w-4 text-green-600" />}
+                          {title.includes('Books') && <BookOpen className="h-4 w-4 text-purple-600" />}
+                          {title}
+                        </h3>
+                        <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                          {content.split('\n').map((line, j) => (
+                            <li key={j}>{line.replace('-', '').trim()}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-orange-600" />
+                    Practice Problems
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {feedbackSections.find(s => s.title.includes('Problems'))?.content.split('\n').map((line, i) => (
+                      <li key={i}>{line.replace(/\d+\.\s/, '')}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
-        {!isLoading && !error && feedbackSections.length === 0 && (
+        {!isLoading && !progressLoading && !error && !progressError && feedbackSections.length === 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -284,9 +282,7 @@ export default function AIReview() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                No feedback available yet. Submit some solutions to get personalized AI recommendations.
-              </p>
+              <p className="text-muted-foreground">No feedback available yet. Submit some solutions to get personalized AI recommendations.</p>
             </CardContent>
           </Card>
         )}
