@@ -166,6 +166,7 @@ LOGOUT_REDIRECT_URL = '/api/accounts/login/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "https://your-vercel-domain.vercel.app",  # Replace with your actual Vercel domain
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -174,4 +175,5 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "https://your-vercel-domain.vercel.app",  # Replace with your actual Vercel domain
 ]

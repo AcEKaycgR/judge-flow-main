@@ -1,5 +1,5 @@
 // API client for connecting frontend to Django backend
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Get CSRF token from cookies
 function getCsrfToken() {
