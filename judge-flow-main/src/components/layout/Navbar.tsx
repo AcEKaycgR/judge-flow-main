@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Code2, Trophy, Play, FileText, Brain, User, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Code2, Trophy, Play, FileText, Brain, User, Settings, LogOut, Menu, X, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { logout } from '@/lib/api';
 
@@ -71,6 +71,36 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+              {/* Admin dropdown for staff users */}
+              {user?.is_staff && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-smooth flex items-center gap-2 h-full ${
+                        isActive('/admin/pending-questions') || isActive('/admin/manage-problems')
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                      }`}
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/pending-questions">
+                        <span>Pending Questions</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/manage-problems">
+                        <span>Manage Problems</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
@@ -111,6 +141,24 @@ export default function Navbar() {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
+                  {/* Admin menu items for staff users */}
+                  {user?.is_staff && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/pending-questions">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Pending Questions</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/manage-problems">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Manage Problems</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -169,6 +217,35 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            {/* Admin links for staff users in mobile menu */}
+            {user?.is_staff && (
+              <>
+                <Link
+                  to="/admin/pending-questions"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-smooth flex items-center gap-2 ${
+                    isActive('/admin/pending-questions')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Pending Questions
+                </Link>
+                <Link
+                  to="/admin/manage-problems"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-smooth flex items-center gap-2 ${
+                    isActive('/admin/manage-problems')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Manage Problems
+                </Link>
+              </>
+            )}
             {user ? (
               <div className="border-t border-border pt-4 pb-3">
                 <div className="flex items-center px-3">

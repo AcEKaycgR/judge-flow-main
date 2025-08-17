@@ -73,3 +73,22 @@ class Submission(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.problem.title}"
+
+class PendingQuestion(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
+    constraints = models.TextField(blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    is_approved = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.title} (Pending Approval)"

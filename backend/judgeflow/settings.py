@@ -166,14 +166,25 @@ LOGOUT_REDIRECT_URL = '/api/accounts/login/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://51.20.248.56:8080",
     "https://judge-flow-main-c8ma6b5si-kintanwork0108-3665s-projects.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
 
 # CSRF settings for development
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://51.20.248.56:8080",
     "https://judge-flow-main-c8ma6b5si-kintanwork0108-3665s-projects.vercel.app",
 ]
+
+# Session settings
+SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests with credentials
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_DOMAIN = None  # Let Django set the domain automatically
+CSRF_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests with credentials
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_DOMAIN = None  # Let Django set the domain automatically

@@ -5,6 +5,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  is_staff: boolean;
 }
 
 interface AuthContextType {
@@ -21,26 +22,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Function to get CSRF token
-  const getCSRFToken = async () => {
-    try {
-      await fetch('/api/csrf/', {
-        method: 'GET',
-        credentials: 'include',
-      });
-    } catch (error) {
-      console.error('Failed to get CSRF token:', error);
-    }
-  };
-
   // Check if user is authenticated on app load
   const checkAuth = async () => {
     try {
-      // First get CSRF token
-      await getCSRFToken();
-      
       const response = await getProfile();
-      setUser(response.user);
+      setUser({
+        id: response.user.id,
+        username: response.user.username,
+        email: response.user.email,
+        is_staff: response.user.is_staff || false
+      });
     } catch (error) {
       // User is not authenticated
       setUser(null);

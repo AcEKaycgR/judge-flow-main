@@ -29,12 +29,20 @@ def user_login(request):
         
         if user is not None:
             login(request, user)
+            
+            # Debug logging
+            print(f"Session key after login: {request.session.session_key}")
+            print(f"User authenticated after login: {request.user.is_authenticated}")
+            print(f"User after login: {request.user}")
+            print(f"Cookies after login: {request.COOKIES}")
+            
             return JsonResponse({
                 'success': True,
                 'user': {
                     'id': user.id,
                     'username': user.username,
                     'email': user.email,
+                    'is_staff': user.is_staff,
                 }
             })
         else:
@@ -67,6 +75,7 @@ def user_signup(request):
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
+                'is_staff': user.is_staff,
             }
         })
 
@@ -79,6 +88,12 @@ def user_logout(request):
 @csrf_exempt
 def user_profile(request):
     if request.method == 'GET':
+        # Debug logging
+        print(f"Session key: {request.session.session_key}")
+        print(f"User authenticated: {request.user.is_authenticated}")
+        print(f"User: {request.user}")
+        print(f"Cookies: {request.COOKIES}")
+        
         if not request.user.is_authenticated:
             return JsonResponse({'error': 'Not authenticated'}, status=401)
         
@@ -88,6 +103,7 @@ def user_profile(request):
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
+                'is_staff': user.is_staff,
             }
         })
 

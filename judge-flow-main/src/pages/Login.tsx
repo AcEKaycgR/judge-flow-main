@@ -37,7 +37,11 @@ export default function Login() {
     setLoading(true);
     try {
       // First get CSRF token
-      await fetch('/api/csrf/', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+      // Construct the CSRF URL correctly
+      const csrfUrl = baseUrl === '/api' ? '/api/csrf/' : `${baseUrl}/csrf/`;
+      
+      await fetch(csrfUrl, {
         method: 'GET',
         credentials: 'include',
       });

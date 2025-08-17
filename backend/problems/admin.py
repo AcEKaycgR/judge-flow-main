@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tag, Problem, Submission, TestCase
+from .models import Tag, Problem, Submission, TestCase, PendingQuestion
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
@@ -25,3 +25,12 @@ class SubmissionAdmin(admin.ModelAdmin):
     list_filter = ('language', 'status', 'problem')
     search_fields = ('user__username', 'problem__title')
     readonly_fields = ('submitted_at',)
+
+@admin.register(PendingQuestion)
+class PendingQuestionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'difficulty', 'created_by', 'created_at', 'is_approved')
+    list_filter = ('difficulty', 'is_approved', 'tags')
+    search_fields = ('title', 'description', 'created_by__username')
+    filter_horizontal = ('tags',)
+    list_editable = ('is_approved',)
+    readonly_fields = ('created_at',)

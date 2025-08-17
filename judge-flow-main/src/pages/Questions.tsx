@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Code, Clock, Users, AlertCircle } from 'lucide-react';
-import { getProblems } from '@/lib/api';
+import { Search, Filter, Code, Clock, Users, AlertCircle, Plus } from 'lucide-react';
+import { getProblems, submitPendingQuestion } from '@/lib/api';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface Question {
   id: number;
@@ -15,9 +17,11 @@ interface Question {
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   tags: string[];
+  is_pending?: boolean;
 }
 
 export default function Questions() {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +30,15 @@ export default function Questions() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>('title');
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [newQuestion, setNewQuestion] = useState({
+    title: '',
+    description: '',
+    difficulty: 'easy',
+    constraints: '',
+    tags: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -38,7 +51,8 @@ export default function Questions() {
           title: problem.title,
           description: '', // Description is not in the API response
           difficulty: problem.difficulty,
-          tags: problem.tags
+          tags: problem.tags,
+          is_pending: problem.is_pending || false
         }));
         setQuestions(transformedQuestions);
         setError(null);
@@ -51,6 +65,17 @@ export default function Questions() {
     };
 
     fetchQuestions();
+    
+    // Listen for question approval events
+    const handleQuestionApproved = () => {
+      fetchQuestions();
+    };
+    
+    window.addEventListener('questionApproved', handleQuestionApproved);
+    
+    return () => {
+      window.removeEventListener('questionApproved', handleQuestionApproved);
+    };
   }, []);
 
   useEffect(() => {
@@ -87,6 +112,46 @@ export default function Questions() {
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
+  };
+
+  const handleNewQuestionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewQuestion(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleNewQuestionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      const tags = newQuestion.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      await submitPendingQuestion({
+        title: newQuestion.title,
+        description: newQuestion.description,
+        difficulty: newQuestion.difficulty,
+        constraints: newQuestion.constraints,
+        tags: tags
+      });
+      
+      toast.success('Question submitted successfully! It will appear once approved.');
+      setShowSubmitForm(false);
+      setNewQuestion({
+        title: '',
+        description: '',
+        difficulty: 'easy',
+        constraints: '',
+        tags: ''
+      });
+    } catch (err) {
+      toast.error('Failed to submit question. Please try again.');
+      console.error('Error submitting question:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Extract unique tags from all questions
@@ -127,13 +192,109 @@ export default function Questions() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Coding Problems
-        </h1>
-        <p className="text-muted-foreground">
-          Sharpen your programming skills with our curated collection of problems.
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Coding Problems
+            </h1>
+            <p className="text-muted-foreground">
+              Sharpen your programming skills with our curated collection of problems.
+            </p>
+          </div>
+          {user && (
+            <Button onClick={() => setShowSubmitForm(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Submit Question
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Submit Question Form */}
+      {showSubmitForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Submit a New Question</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleNewQuestionSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Title</label>
+                <Input
+                  name="title"
+                  value={newQuestion.title}
+                  onChange={handleNewQuestionChange}
+                  placeholder="Enter question title"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description</label>
+                <textarea
+                  name="description"
+                  value={newQuestion.description}
+                  onChange={handleNewQuestionChange}
+                  placeholder="Enter question description"
+                  className="w-full min-h-[120px] px-3 py-2 border rounded-md bg-background text-foreground"
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Difficulty</label>
+                  <select
+                    name="difficulty"
+                    value={newQuestion.difficulty}
+                    onChange={handleNewQuestionChange}
+                    className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Tags (comma separated)</label>
+                  <Input
+                    name="tags"
+                    value={newQuestion.tags}
+                    onChange={handleNewQuestionChange}
+                    placeholder="e.g., array, string, sorting"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Constraints (optional)</label>
+                <textarea
+                  name="constraints"
+                  value={newQuestion.constraints}
+                  onChange={handleNewQuestionChange}
+                  placeholder="Enter constraints (e.g., time complexity, space complexity)"
+                  className="w-full min-h-[80px] px-3 py-2 border rounded-md bg-background text-foreground"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSubmitForm(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Submitting...' : 'Submit for Approval'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="mb-6">
@@ -229,6 +390,11 @@ export default function Questions() {
                 <div className="flex-1">
                   <CardTitle className="text-lg mb-2 leading-tight">
                     {question.title}
+                    {question.is_pending && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        Pending Approval
+                      </Badge>
+                    )}
                   </CardTitle>
                   <div className="flex items-center gap-2 mb-3">
                     <DifficultyBadge difficulty={question.difficulty} />
@@ -289,6 +455,11 @@ export default function Questions() {
               <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No problems found</h3>
               <p>Try adjusting your search criteria or filters.</p>
+              {user && (
+                <p className="mt-4 text-sm">
+                  Have a question you'd like to add? <Button variant="link" onClick={() => setShowSubmitForm(true)} className="p-0 h-auto">Submit it for review</Button>
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

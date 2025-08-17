@@ -1,62 +1,87 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import Navbar from "./components/layout/Navbar";
-import Dashboard from "./pages/Dashboard";
-import Questions from "./pages/Questions";
-import QuestionDetail from "./pages/QuestionDetail";
-import Playground from "./pages/Playground";
-import Submissions from "./pages/Submissions";
-import SubmissionDetail from "./pages/SubmissionDetail";
-import AIReview from "./pages/AIReview";
-import Contests from "./pages/Contests";
-import ContestDetail from "./pages/ContestDetail";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import NotFound from "./pages/NotFound";
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { AuthProvider, useAuth } from "@/contexts/AuthContext"
+import Navbar from "./components/layout/Navbar"
+import Dashboard from "./pages/Dashboard"
+import Questions from "./pages/Questions"
+import QuestionDetail from "./pages/QuestionDetail"
+import Playground from "./pages/Playground"
+import Submissions from "./pages/Submissions"
+import SubmissionDetail from "./pages/SubmissionDetail"
+import AIReview from "./pages/AIReview"
+import Contests from "./pages/Contests"
+import ContestDetail from "./pages/ContestDetail"
+import Login from "./pages/Login"
+import Signup from "./pages/Signup"
+import NotFound from "./pages/NotFound"
+import AdminPendingQuestions from "./pages/AdminPendingQuestions"
+import AdminManageProblems from "./pages/AdminManageProblems"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />
   }
 
-  return <>{children}</>;
-};
+  return <>{children}</>
+}
 
 // Public route component (redirects authenticated users away from auth pages)
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />
   }
 
-  return <>{children}</>;
-};
+  return <>{children}</>
+}
+
+// Admin route component
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (!user.is_staff) {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
 
 const AppContent = () => (
   <QueryClientProvider client={queryClient}>
@@ -100,7 +125,23 @@ const AppContent = () => (
                       <Route path="/submissions/:id" element={<SubmissionDetail />} />
                       <Route path="/ai-review" element={<AIReview />} />
                       <Route path="/contests" element={<Contests />} />
-<Route path="/contests/:id" element={<ContestDetail />} />
+                      <Route path="/contests/:id" element={<ContestDetail />} />
+                      <Route 
+                        path="/admin/pending-questions" 
+                        element={
+                          <AdminRoute>
+                            <AdminPendingQuestions />
+                          </AdminRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/admin/manage-problems" 
+                        element={
+                          <AdminRoute>
+                            <AdminManageProblems />
+                          </AdminRoute>
+                        } 
+                      />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </>
@@ -112,12 +153,12 @@ const AppContent = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+)
 
 const App = () => (
   <AuthProvider>
     <AppContent />
   </AuthProvider>
-);
+)
 
-export default App;
+export default App
