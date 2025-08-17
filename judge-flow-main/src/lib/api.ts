@@ -1,4 +1,20 @@
-// API client for connecting frontend to Django backend
+// Utility function to get CSRF token from cookies
+function getCSRFToken(): string {
+  const name = 'csrftoken';
+  let cookieValue = '';
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      // Does this cookie string begin with the name we want?
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 interface LoginData {
@@ -130,6 +146,7 @@ export const login = async (data: LoginData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -147,6 +164,7 @@ export const signup = async (data: SignupData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -164,6 +182,7 @@ export const logout = async () => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     credentials: 'include',
   });
@@ -251,11 +270,17 @@ export const submitPendingQuestion = async (data: {
   difficulty: string;
   constraints?: string;
   tags?: string[];
+  test_cases?: {
+    input: string;
+    expectedOutput: string;
+    isHidden: boolean;
+  }[];
 }) => {
   const response = await fetch(`${API_BASE_URL}/problems/submit-pending-question/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -273,6 +298,7 @@ export const submitSolution = async (data: SubmitSolutionData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -371,6 +397,7 @@ export const createContest = async (data: any) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -388,6 +415,7 @@ export const submitContestSolution = async (data: any) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -406,6 +434,7 @@ export const runCode = async (data: RunCodeData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -423,6 +452,7 @@ export const getAIReview = async (data: AIReviewData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
     credentials: 'include',
@@ -440,6 +470,7 @@ export const getComprehensiveAIReview = async (): Promise<ComprehensiveAIReviewR
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     credentials: 'include',
   });
@@ -456,6 +487,7 @@ export const getProblemAIReview = async (problemId: number, code: string): Promi
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken(),
     },
     credentials: 'include',
     body: JSON.stringify({ code }),

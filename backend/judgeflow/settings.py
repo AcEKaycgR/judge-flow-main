@@ -138,6 +138,11 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Trust local proxy
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -173,6 +178,22 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
 
+# Additional CORS settings for better cookie handling
+CORS_EXPOSE_HEADERS = ['Content-Disposition']
+
+# CORS allowed headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
 # CSRF settings for development
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
@@ -182,9 +203,13 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Session settings
-SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests with credentials
-SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
-SESSION_COOKIE_DOMAIN = None  # Let Django set the domain automatically
-CSRF_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests with credentials
-CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
-CSRF_COOKIE_DOMAIN = None  # Let Django set the domain automatically
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Should be True in production with HTTPS
+SESSION_COOKIE_DOMAIN = None
+SESSION_COOKIE_HTTPONLY = True  # Added for security
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False  # Should be True in production with HTTPS
+CSRF_COOKIE_DOMAIN = None
+CSRF_COOKIE_HTTPONLY = False  # Required for CSRF to work with JavaScript

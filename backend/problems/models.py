@@ -89,6 +89,8 @@ class PendingQuestion(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
     is_approved = models.BooleanField(default=False)
+    # Store test cases as JSON field
+    test_cases_data = models.JSONField(null=True, blank=True, help_text="Test cases submitted with the question")
     
     def __str__(self):
         return f"{self.title} (Pending Approval)"

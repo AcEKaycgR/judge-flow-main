@@ -41,10 +41,14 @@ export default function Login() {
       // Construct the CSRF URL correctly
       const csrfUrl = baseUrl === '/api' ? '/api/csrf/' : `${baseUrl}/csrf/`;
       
+      // Get CSRF token and ensure cookies are set
       await fetch(csrfUrl, {
         method: 'GET',
         credentials: 'include',
       });
+      
+      // Small delay to ensure cookies are set
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const response = await apiLogin({
         username: formData.email,

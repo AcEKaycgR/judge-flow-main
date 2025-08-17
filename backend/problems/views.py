@@ -141,16 +141,27 @@ def submit_pending_question(request):
             difficulty = data.get('difficulty')
             constraints = data.get('constraints', '')
             tag_names = data.get('tags', [])
+            test_cases = data.get('test_cases', [])
             
             if not title or not description or not difficulty:
                 return JsonResponse({'error': 'Title, description, and difficulty are required'}, status=400)
+                
+            # Validate that at least one test case is provided
+            if not test_cases or len(test_cases) == 0:
+                return JsonResponse({'error': 'At least one test case is required'}, status=400)
+                
+            # Validate test cases
+            for i, test_case in enumerate(test_cases):
+                if not test_case.get('input') or not test_case.get('expectedOutput'):
+                    return JsonResponse({'error': f'Test case {i+1} must have both input and expected output'}, status=400)
             
-            # Create pending question
+            # Create pending question with test cases data
             pending_question = PendingQuestion.objects.create(
                 title=title,
                 description=description,
                 difficulty=difficulty,
                 constraints=constraints,
+                test_cases_data=test_cases,  # Store test cases data
                 created_by=request.user
             )
             
@@ -158,6 +169,11 @@ def submit_pending_question(request):
             for tag_name in tag_names:
                 tag, created = Tag.objects.get_or_create(name=tag_name)
                 pending_question.tags.add(tag)
+            
+            # Store test cases as JSON in a temporary field or handle them during approval
+            # For now, we'll store them in the session or a temporary model
+            # Since we don't have a direct field for test cases in PendingQuestion,
+            # we'll handle them during approval
             
             return JsonResponse({'success': True, 'message': 'Question submitted for approval'})
         except Exception as e:
@@ -199,6 +215,7 @@ def pending_questions_list(request):
                 'created_by': question.created_by.username,
                 'created_at': question.created_at.isoformat(),
                 'is_approved': question.is_approved,
+                'test_cases_count': len(question.test_cases_data) if question.test_cases_data else 0,
             })
         
         return JsonResponse({'questions': questions_data})
@@ -231,6 +248,16 @@ def approve_pending_question(request, question_id):
             # Copy tags
             for tag in pending_question.tags.all():
                 problem.tags.add(tag)
+            
+            # Create test cases if they exist
+            if pending_question.test_cases_data:
+                for test_case_data in pending_question.test_cases_data:
+                    TestCase.objects.create(
+                        problem=problem,
+                        input_data=test_case_data['input'],
+                        expected_output=test_case_data['expectedOutput'],
+                        is_hidden=test_case_data.get('isHidden', False)
+                    )
             
             # Mark as approved
             pending_question.is_approved = True

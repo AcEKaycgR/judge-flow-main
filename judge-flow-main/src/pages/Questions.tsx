@@ -38,6 +38,10 @@ export default function Questions() {
     constraints: '',
     tags: ''
   });
+  
+  const [testCases, setTestCases] = useState([
+    { input: '', expectedOutput: '', isHidden: false }
+  ]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -122,9 +126,34 @@ export default function Questions() {
     }));
   };
 
+  const handleTestCaseChange = (index: number, field: string, value: string | boolean) => {
+    setTestCases(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const addTestCase = () => {
+    setTestCases(prev => [...prev, { input: '', expectedOutput: '', isHidden: false }]);
+  };
+
+  const removeTestCase = (index: number) => {
+    if (testCases.length > 1) {
+      setTestCases(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleNewQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    
+    // Validate that at least one test case is provided
+    if (testCases.some(tc => !tc.input.trim() || !tc.expectedOutput.trim())) {
+      toast.error('Please fill in both input and expected output for all test cases.');
+      setSubmitting(false);
+      return;
+    }
     
     try {
       const tags = newQuestion.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
@@ -134,7 +163,8 @@ export default function Questions() {
         description: newQuestion.description,
         difficulty: newQuestion.difficulty,
         constraints: newQuestion.constraints,
-        tags: tags
+        tags: tags,
+        test_cases: testCases
       });
       
       toast.success('Question submitted successfully! It will appear once approved.');
@@ -146,6 +176,9 @@ export default function Questions() {
         constraints: '',
         tags: ''
       });
+      setTestCases([
+        { input: '', expectedOutput: '', isHidden: false }
+      ]);
     } catch (err) {
       toast.error('Failed to submit question. Please try again.');
       console.error('Error submitting question:', err);
@@ -276,6 +309,81 @@ export default function Questions() {
                   placeholder="Enter constraints (e.g., time complexity, space complexity)"
                   className="w-full min-h-[80px] px-3 py-2 border rounded-md bg-background text-foreground"
                 />
+              </div>
+              
+              {/* Test Cases Section */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-medium">Test Cases</label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addTestCase}
+                    className="text-xs"
+                  >
+                    Add Test Case
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  At least one test case is required. Each test case needs both input and expected output.
+                </p>
+                
+                {testCases.map((testCase, index) => (
+                  <div key={index} className="border rounded-md p-4 mb-3 bg-muted/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-sm font-medium">Test Case {index + 1}</h4>
+                      {testCases.length > 1 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeTestCase(index)}
+                          className="h-6 w-6 p-0"
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="text-xs font-medium mb-1 block">Input</label>
+                        <textarea
+                          value={testCase.input}
+                          onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
+                          placeholder="Input for this test case"
+                          className="w-full min-h-[80px] px-2 py-1 text-xs border rounded bg-background"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-xs font-medium mb-1 block">Expected Output</label>
+                        <textarea
+                          value={testCase.expectedOutput}
+                          onChange={(e) => handleTestCaseChange(index, 'expectedOutput', e.target.value)}
+                          placeholder="Expected output for this test case"
+                          className="w-full min-h-[80px] px-2 py-1 text-xs border rounded bg-background"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`hidden-${index}`}
+                        checked={testCase.isHidden}
+                        onChange={(e) => handleTestCaseChange(index, 'isHidden', e.target.checked)}
+                        className="mr-2 h-4 w-4"
+                      />
+                      <label htmlFor={`hidden-${index}`} className="text-xs">
+                        Hidden Test Case (won't be shown to users)
+                      </label>
+                    </div>
+                  </div>
+                ))}
               </div>
               
               <div className="flex justify-end gap-2">
