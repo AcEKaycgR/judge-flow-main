@@ -135,30 +135,14 @@ def submit_pending_question(request):
             return JsonResponse({'error': 'Title and description are required'}, status=400)
         
         try:
-            # Create pending question
-            pending_question = PendingQuestion.objects.create(
-                title=title,
-                description=description,
-                difficulty=difficulty,
-                constraints=constraints,
-                created_by=request.user
-            )
-            
-            # Handle tags
-            tag_names = [tag.strip() for tag in tags if tag.strip()]
-            for tag_name in tag_names:
-                tag, created = Tag.objects.get_or_create(name=tag_name)
-                pending_question.tags.add(tag)
-            
             # Validate and store test cases
             if not test_cases:
                 return JsonResponse({'error': 'At least one test case is required'}, status=400)
-                
-            # Validate test cases
+
             for i, test_case in enumerate(test_cases):
-                if not test_case.get('input') or not test_case.get('expectedOutput'):
+                if 'input' not in test_case or 'expectedOutput' not in test_case:
                     return JsonResponse({'error': f'Test case {i+1} must have both input and expected output'}, status=400)
-            
+
             # Create pending question with test cases data
             pending_question = PendingQuestion.objects.create(
                 title=title,
