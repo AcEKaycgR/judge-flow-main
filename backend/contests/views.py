@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db import transaction
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 import json
 from .models import Contest, ContestSubmission
 from problems.models import Problem
@@ -49,6 +51,8 @@ def contest_detail(request, contest_id):
         
         return JsonResponse({'contest': contest_data})
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_contest(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -102,6 +106,8 @@ def create_contest(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def contest_submissions(request, contest_id):
     if request.method == 'GET':
         contest = get_object_or_404(Contest, id=contest_id)
@@ -127,6 +133,8 @@ def contest_submissions(request, contest_id):
         
         return JsonResponse({'submissions': submissions_data})
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def submit_contest_solution(request):
     if request.method == 'POST':
         data = json.loads(request.body)

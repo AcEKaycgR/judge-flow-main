@@ -5,6 +5,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 import json
 from problems.models import Problem, Submission
@@ -90,10 +92,10 @@ def user_logout(request):
         # For JWT, logout is handled client-side by deleting the token
         return JsonResponse({'success': True})
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def user_profile(request):
     if request.method == 'GET':
-        # With JWT authentication, DRF will handle authentication
-        # We can safely access request.user here
         user = request.user
         return JsonResponse({
             'user': {
@@ -104,10 +106,10 @@ def user_profile(request):
             }
         })
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def dashboard_data(request):
     if request.method == 'GET':
-        # With JWT authentication, DRF will handle authentication
-        # We can safely access request.user here
         user = request.user
         
         # Get user stats

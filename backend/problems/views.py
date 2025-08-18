@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.contrib.auth.models import User
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 import json
 from .models import Problem, Submission, Tag, TestCase, PendingQuestion
 
@@ -75,6 +77,8 @@ def problem_detail(request, problem_id):
         except Problem.DoesNotExist:
             return JsonResponse({'error': 'Problem not found'}, status=404)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def user_submissions(request):
     if request.method == 'GET':
         submissions = Submission.objects.filter(user=request.user).select_related('problem').order_by('-submitted_at')
@@ -93,6 +97,8 @@ def user_submissions(request):
         
         return JsonResponse({'submissions': submissions_data})
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def submission_detail(request, submission_id):
     if request.method == 'GET':
         submission = get_object_or_404(Submission, id=submission_id, user=request.user)
@@ -112,6 +118,8 @@ def submission_detail(request, submission_id):
         
         return JsonResponse({'submission': submission_data})
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def submit_pending_question(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -177,6 +185,8 @@ def submit_pending_question(request):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def pending_questions_list(request):
     if request.method == 'GET':
         # Check if user is admin
@@ -209,6 +219,8 @@ def pending_questions_list(request):
         
         return JsonResponse({'pending_questions': pending_questions_data})
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def approve_pending_question(request, question_id):
     if request.method == 'POST':
         # Check if user is admin
@@ -251,6 +263,8 @@ def approve_pending_question(request, question_id):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def reject_pending_question(request, question_id):
     if request.method == 'POST':
         # Check if user is admin
@@ -268,6 +282,8 @@ def reject_pending_question(request, question_id):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_problem(request, problem_id):
     if request.method == 'DELETE':
         # Check if user is admin
