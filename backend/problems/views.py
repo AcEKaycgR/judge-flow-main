@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 import json
 from .models import Problem, Submission, Tag, TestCase, PendingQuestion
-
+import traceback
 # This is a placeholder for the actual code execution logic
 # which would likely involve a separate service, sandboxing, etc.
 # The actual implementation has been moved to the compiler app.
@@ -239,6 +239,8 @@ def approve_pending_question(request, question_id):
             
             return JsonResponse({'success': True, 'message': 'Question approved successfully'})
         except Exception as e:
+            print("❌ Approval error:", str(e))
+            traceback.print_exc()
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
