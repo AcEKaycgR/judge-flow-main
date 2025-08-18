@@ -154,14 +154,10 @@ def submit_pending_question(request):
             )
             
             # Handle tags
+            tag_names = [tag.strip() for tag in tags if tag.strip()]
             for tag_name in tag_names:
                 tag, created = Tag.objects.get_or_create(name=tag_name)
                 pending_question.tags.add(tag)
-            
-            # Store test cases as JSON in a temporary field or handle them during approval
-            # For now, we'll store them in the session or a temporary model
-            # Since we don't have a direct field for test cases in PendingQuestion,
-            # we'll handle them during approval
             
             return JsonResponse({'success': True, 'message': 'Question submitted for approval'})
         except Exception as e:
