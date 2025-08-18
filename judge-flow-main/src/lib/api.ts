@@ -35,7 +35,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 // Utility function to make authenticated requests with automatic token refresh
-async function authenticatedRequest(url: string, options: RequestInit = {}) {
+export async function authenticatedRequest(url: string, options: RequestInit = {}) {
   // Add authorization header
   const accessToken = getAccessToken();
   const headers = {

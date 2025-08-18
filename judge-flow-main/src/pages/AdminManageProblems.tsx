@@ -6,7 +6,7 @@ import { AlertCircle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
-import { getProblems } from '@/lib/api';
+import { getProblems, authenticatedRequest } from '@/lib/api';
 
 interface Problem {
   id: number;
@@ -58,11 +58,8 @@ export default function AdminManageProblems() {
 
   const handleDelete = async (problemId: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/problems/delete-problem/${problemId}/`, {
+      const response = await authenticatedRequest(`${API_BASE_URL}/problems/delete-problem/${problemId}/`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
       
       if (!response.ok) {
