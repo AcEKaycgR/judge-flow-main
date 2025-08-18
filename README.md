@@ -1,5 +1,4 @@
 # JudgeFlow
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![Django](https://img.shields.io/badge/django-5.2.5-green.svg)](https://www.djangoproject.com/)
 [![React](https://img.shields.io/badge/react-18.3.1-blue.svg)](https://reactjs.org/)
@@ -7,6 +6,8 @@
 Welcome to **JudgeFlow** - where coding meets competition! 🚀
 
 JudgeFlow is a comprehensive, full-stack competitive programming platform designed to help developers sharpen their skills, compete in coding challenges, and receive intelligent feedback on their solutions. Whether you're preparing for technical interviews, participating in coding contests, or just passionate about problem-solving, JudgeFlow provides the ultimate environment to elevate your coding game.
+
+[DEMO VIDEO LINK](https://www.loom.com/share/25293704348e4aa398bc45dda8635cb3?sid=0bbf074d-ecd5-4b2c-946b-78ef58bee550)
 
 ## 🌟 Key Features
 
@@ -134,33 +135,6 @@ Create `.env` files in both frontend and backend directories:
 - Frontend: `VITE_API_BASE_URL` for backend API URL
 - Backend: Database settings, secret keys, etc.
 
-## 🤝 Contributing
-
-We love contributions! Here's how you can help:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Thanks to all contributors who have helped shape JudgeFlow
-- Special thanks to the open-source community for the amazing tools and libraries
-- Inspired by platforms like LeetCode, Codeforces, and HackerRank
-
-## 📞 Support
-
-Have questions or need help?
-- Open an issue on GitHub
-- Contact the development team
-
----
 
 **Happy Coding!** 💻✨
 
