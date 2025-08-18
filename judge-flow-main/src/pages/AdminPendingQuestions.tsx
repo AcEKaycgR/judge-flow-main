@@ -6,6 +6,7 @@ import { AlertCircle, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
+import { getPendingQuestions, approvePendingQuestion, rejectPendingQuestion } from '@/lib/api';
 
 interface PendingQuestion {
   id: number;
@@ -18,8 +19,6 @@ interface PendingQuestion {
   created_at: string;
   is_approved: boolean;
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Add this at the top with other interfaces
 interface ApprovedQuestionEvent {
@@ -46,23 +45,12 @@ export default function AdminPendingQuestions() {
   const fetchPendingQuestions = async () => {
     try {
       setLoading(true);
-      const queryParams = new URLSearchParams();
-      if (filter === 'pending') queryParams.append('approved', 'false');
-      if (filter === 'approved') queryParams.append('approved', 'true');
+      const params: { approved?: string } = {};
+      if (filter === 'pending') params.approved = 'false';
+      if (filter === 'approved') params.approved = 'true';
       
-      const response = await fetch(`${API_BASE_URL}/problems/pending-questions/?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch pending questions');
-      }
-      
-      const data = await response.json();
-      setQuestions(data.questions);
+      const data = await getPendingQuestions(params);
+      setQuestions(data.pending_questions);
       setError(null);
     } catch (err) {
       setError('Failed to fetch pending questions. Please try again later.');
@@ -74,16 +62,7 @@ export default function AdminPendingQuestions() {
 
   const handleApprove = async (questionId: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/problems/approve-pending-question/${questionId}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to approve question');
-      }
+      await approvePendingQuestion(questionId);
       
       toast.success('Question approved successfully!');
       
@@ -100,16 +79,7 @@ export default function AdminPendingQuestions() {
 
   const handleReject = async (questionId: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/problems/reject-pending-question/${questionId}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to reject question');
-      }
+      await rejectPendingQuestion(questionId);
       
       toast.success('Question rejected successfully!');
       
