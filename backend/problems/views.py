@@ -216,8 +216,7 @@ def approve_pending_question(request, question_id):
                 title=pending_question.title,
                 description=pending_question.description,
                 difficulty=pending_question.difficulty,
-                constraints=pending_question.constraints,
-                created_by=pending_question.created_by
+                constraints=pending_question.constraints
             )
             
             # Add tags
