@@ -159,8 +159,13 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Allow all hosts for development (change for production)
-ALLOWED_HOSTS = ['*']
+# Allow specific hosts for production
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '51.20.248.56',
+    'judge-flow-main.onrender.com',  # Your Render deployment
+]
 
 # Login/Logout URLs
 LOGIN_URL = '/api/accounts/login/'
@@ -173,6 +178,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://51.20.248.56:8080",
     "https://judge-flow-main-c8ma6b5si-kintanwork0108-3665s-projects.vercel.app",
+    "https://judge-flow-main.vercel.app",  # Add your Vercel deployment URL
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -200,16 +206,17 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://51.20.248.56:8080",
     "https://judge-flow-main-c8ma6b5si-kintanwork0108-3665s-projects.vercel.app",
+    "https://judge-flow-main.vercel.app",  # Add your Vercel deployment URL
 ]
 
 # Session settings
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False  # Should be True in production with HTTPS
+SESSION_COOKIE_SECURE = True  # Should be True in production with HTTPS
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_HTTPONLY = True  # Added for security
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False  # Should be True in production with HTTPS
+CSRF_COOKIE_SECURE = True  # Should be True in production with HTTPS
 CSRF_COOKIE_DOMAIN = None
 CSRF_COOKIE_HTTPONLY = False  # Required for CSRF to work with JavaScript
