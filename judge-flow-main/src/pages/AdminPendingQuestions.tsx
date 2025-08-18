@@ -55,7 +55,6 @@ export default function AdminPendingQuestions() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -80,7 +79,6 @@ export default function AdminPendingQuestions() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -107,7 +105,6 @@ export default function AdminPendingQuestions() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
       });
       
       if (!response.ok) {

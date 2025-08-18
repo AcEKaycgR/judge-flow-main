@@ -63,7 +63,6 @@ export default function AdminManageProblems() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
       });
       
       if (!response.ok) {

@@ -1,20 +1,70 @@
-// Utility function to get CSRF token from cookies
-function getCSRFToken(): string {
-  const name = 'csrftoken';
-  let cookieValue = '';
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      // Does this cookie string begin with the name we want?
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
+// Utility function to get access token from sessionStorage
+function getAccessToken(): string | null {
+  return sessionStorage.getItem('accessToken');
+}
+
+// Utility function to refresh access token
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = sessionStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/accounts/token/refresh/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      sessionStorage.setItem('accessToken', data.access);
+      return data.access;
+    }
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+  }
+
+  // If refresh failed, clear tokens
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('refreshToken');
+  return null;
+}
+
+// Utility function to make authenticated requests with automatic token refresh
+async function authenticatedRequest(url: string, options: RequestInit = {}) {
+  // Add authorization header
+  const accessToken = getAccessToken();
+  const headers = {
+    ...options.headers,
+    'Content-Type': 'application/json',
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  let response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  // If unauthorized, try to refresh token and retry
+  if (response.status === 401 && accessToken) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, {
+        ...options,
+        headers,
+      });
     }
   }
-  return cookieValue;
+
+  return response;
 }
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 interface LoginData {
@@ -96,7 +146,23 @@ interface UserProfile {
     id: number;
     username: string;
     email: string;
+    is_staff: boolean;
   };
+}
+
+interface AuthResponse {
+  success: boolean;
+  tokens?: {
+    access: string;
+    refresh: string;
+  };
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+    is_staff: boolean;
+  };
+  error?: string;
 }
 
 interface AIReviewData {
@@ -141,66 +207,72 @@ interface UserProgressResponse {
 }
 
 // Auth APIs
-export const login = async (data: LoginData) => {
+export const login = async (data: LoginData): Promise<AuthResponse> => {
   const response = await fetch(`${API_BASE_URL}/accounts/login/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
     throw new Error('Login failed');
   }
   
-  return response.json();
+  const result = await response.json();
+  
+  // Store tokens if login was successful
+  if (result.success && result.tokens) {
+    sessionStorage.setItem('accessToken', result.tokens.access);
+    sessionStorage.setItem('refreshToken', result.tokens.refresh);
+  }
+  
+  return result;
 };
 
-export const signup = async (data: SignupData) => {
+export const signup = async (data: SignupData): Promise<AuthResponse> => {
   const response = await fetch(`${API_BASE_URL}/accounts/signup/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
     },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
     throw new Error('Signup failed');
   }
   
-  return response.json();
+  const result = await response.json();
+  
+  // Store tokens if signup was successful
+  if (result.success && result.tokens) {
+    sessionStorage.setItem('accessToken', result.tokens.access);
+    sessionStorage.setItem('refreshToken', result.tokens.refresh);
+  }
+  
+  return result;
 };
 
 export const logout = async () => {
+  // For JWT, logout is handled client-side by deleting the token
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('refreshToken');
+  
   const response = await fetch(`${API_BASE_URL}/accounts/logout/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
     },
-    credentials: 'include',
   });
-  
-  if (!response.ok) {
-    throw new Error('Logout failed');
-  }
   
   return response.json();
 };
 
 export const getProfile = async (): Promise<UserProfile> => {
-  const response = await fetch(`${API_BASE_URL}/accounts/profile/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/accounts/profile/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -211,12 +283,8 @@ export const getProfile = async (): Promise<UserProfile> => {
 };
 
 export const getDashboardData = async (): Promise<DashboardData> => {
-  const response = await fetch(`${API_BASE_URL}/accounts/dashboard/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/accounts/dashboard/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -233,12 +301,8 @@ export const getProblems = async (params?: { search?: string; tags?: string; dif
   if (params?.tags) queryParams.append('tags', params.tags);
   if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
   
-  const response = await fetch(`${API_BASE_URL}/problems/?${queryParams}`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/?${queryParams}`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -249,12 +313,8 @@ export const getProblems = async (params?: { search?: string; tags?: string; dif
 };
 
 export const getProblem = async (id: number): Promise<{ problem: Problem }> => {
-  const response = await fetch(`${API_BASE_URL}/problems/${id}/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/${id}/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -276,14 +336,9 @@ export const submitPendingQuestion = async (data: {
     isHidden: boolean;
   }[];
 }) => {
-  const response = await fetch(`${API_BASE_URL}/problems/submit-pending-question/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/submit-pending-question/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -294,14 +349,9 @@ export const submitPendingQuestion = async (data: {
 };
 
 export const submitSolution = async (data: SubmitSolutionData) => {
-  const response = await fetch(`${API_BASE_URL}/compiler/submit-solution/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/compiler/submit-solution/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -312,12 +362,8 @@ export const submitSolution = async (data: SubmitSolutionData) => {
 };
 
 export const getUserSubmissions = async (): Promise<{ submissions: SubmissionResponse[] }> => {
-  const response = await fetch(`${API_BASE_URL}/problems/submissions/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/submissions/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -328,12 +374,8 @@ export const getUserSubmissions = async (): Promise<{ submissions: SubmissionRes
 };
 
 export const getSubmission = async (submissionId: number) => {
-  const response = await fetch(`${API_BASE_URL}/problems/submissions/${submissionId}/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/submissions/${submissionId}/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -345,12 +387,8 @@ export const getSubmission = async (submissionId: number) => {
 
 // Contests APIs
 export const getContests = async (): Promise<{ contests: ContestResponse[] }> => {
-  const response = await fetch(`${API_BASE_URL}/contests/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/contests/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -361,12 +399,8 @@ export const getContests = async (): Promise<{ contests: ContestResponse[] }> =>
 };
 
 export const getContest = async (id: number): Promise<{ contest: ContestResponse }> => {
-  const response = await fetch(`${API_BASE_URL}/contests/${id}/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/contests/${id}/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -377,12 +411,8 @@ export const getContest = async (id: number): Promise<{ contest: ContestResponse
 };
 
 export const getContestSubmissions = async (contestId: number) => {
-  const response = await fetch(`${API_BASE_URL}/contests/${contestId}/submissions/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/contests/${contestId}/submissions/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -393,14 +423,9 @@ export const getContestSubmissions = async (contestId: number) => {
 };
 
 export const createContest = async (data: any) => {
-  const response = await fetch(`${API_BASE_URL}/contests/create/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/contests/create/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -411,14 +436,9 @@ export const createContest = async (data: any) => {
 };
 
 export const submitContestSolution = async (data: any) => {
-  const response = await fetch(`${API_BASE_URL}/contests/submit/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/contests/submit/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -430,14 +450,9 @@ export const submitContestSolution = async (data: any) => {
 
 // Compiler APIs
 export const runCode = async (data: RunCodeData) => {
-  const response = await fetch(`${API_BASE_URL}/compiler/run-code/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/compiler/run-code/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -448,14 +463,9 @@ export const runCode = async (data: RunCodeData) => {
 };
 
 export const getAIReview = async (data: AIReviewData) => {
-  const response = await fetch(`${API_BASE_URL}/compiler/ai-review/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/compiler/ai-review/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -466,13 +476,8 @@ export const getAIReview = async (data: AIReviewData) => {
 };
 
 export const getComprehensiveAIReview = async (): Promise<ComprehensiveAIReviewResponse> => {
-  const response = await fetch(`${API_BASE_URL}/ai-review/comprehensive-ai-review/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/ai-review/comprehensive-ai-review/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -483,13 +488,8 @@ export const getComprehensiveAIReview = async (): Promise<ComprehensiveAIReviewR
 };
 
 export const getProblemAIReview = async (problemId: number, code: string): Promise<ProblemAIReviewResponse> => {
-  const response = await fetch(`${API_BASE_URL}/ai-review/problems/${problemId}/ai-review/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/ai-review/problems/${problemId}/ai-review/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCSRFToken(),
-    },
-    credentials: 'include',
     body: JSON.stringify({ code }),
   });
   
@@ -501,12 +501,8 @@ export const getProblemAIReview = async (problemId: number, code: string): Promi
 };
 
 export const getUserProgress = async (): Promise<UserProgressResponse> => {
-  const response = await fetch(`${API_BASE_URL}/ai-review/user-progress/`, {
+  const response = await authenticatedRequest(`${API_BASE_URL}/ai-review/user-progress/`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
   });
   
   if (!response.ok) {

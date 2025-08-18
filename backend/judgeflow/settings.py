@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
     'problems',
@@ -146,7 +147,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -157,6 +158,24 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+}
+
+# JWT settings
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
 # Allow specific hosts for production
@@ -181,7 +200,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://judge-flow-main.vercel.app",  # Add your Vercel deployment URL
 ]
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = False  # Not needed with JWT
 CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
 
 # Additional CORS settings for better cookie handling
@@ -200,23 +219,26 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# CSRF settings for development
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://51.20.248.56:8080",
-    "https://judge-flow-main-c8ma6b5si-kintanwork0108-3665s-projects.vercel.app",
-    "https://judge-flow-main.vercel.app",  # Add your Vercel deployment URL
-]
-
 # Session settings
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = True  # Should be True in production with HTTPS
+SESSION_COOKIE_SECURE = False  # Should be True in production with HTTPS
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_HTTPONLY = True  # Added for security
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = True  # Should be True in production with HTTPS
+CSRF_COOKIE_SECURE = False  # Should be True in production with HTTPS
+CSRF_COOKIE_DOMAIN = None
+CSRF_COOKIE_HTTPONLY = False  # Required for CSRF to work with JavaScript
+
+# Session settings
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Should be True in production with HTTPS
+SESSION_COOKIE_DOMAIN = None
+SESSION_COOKIE_HTTPONLY = True  # Added for security
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False  # Should be True in production with HTTPS
 CSRF_COOKIE_DOMAIN = None
 CSRF_COOKIE_HTTPONLY = False  # Required for CSRF to work with JavaScript

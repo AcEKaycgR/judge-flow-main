@@ -5,9 +5,17 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
 import json
 from problems.models import Problem, Submission
 from contests.models import Contest
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 @csrf_exempt
 def user_login(request):
@@ -28,16 +36,12 @@ def user_login(request):
                 pass
         
         if user is not None:
-            login(request, user)
-            
-            # Debug logging
-            print(f"Session key after login: {request.session.session_key}")
-            print(f"User authenticated after login: {request.user.is_authenticated}")
-            print(f"User after login: {request.user}")
-            print(f"Cookies after login: {request.COOKIES}")
+            # Get JWT tokens
+            tokens = get_tokens_for_user(user)
             
             return JsonResponse({
                 'success': True,
+                'tokens': tokens,
                 'user': {
                     'id': user.id,
                     'username': user.username,
@@ -66,11 +70,12 @@ def user_signup(request):
         # Create user
         user = User.objects.create_user(username=username, email=email, password=password)
         
-        # Log in the user
-        login(request, user)
+        # Get JWT tokens
+        tokens = get_tokens_for_user(user)
         
         return JsonResponse({
             'success': True,
+            'tokens': tokens,
             'user': {
                 'id': user.id,
                 'username': user.username,
@@ -82,18 +87,12 @@ def user_signup(request):
 @csrf_exempt
 def user_logout(request):
     if request.method == 'POST':
-        logout(request)
+        # For JWT, logout is handled client-side by deleting the token
         return JsonResponse({'success': True})
 
 @csrf_exempt
 def user_profile(request):
     if request.method == 'GET':
-        # Debug logging
-        print(f"Session key: {request.session.session_key}")
-        print(f"User authenticated: {request.user.is_authenticated}")
-        print(f"User: {request.user}")
-        print(f"Cookies: {request.COOKIES}")
-        
         if not request.user.is_authenticated:
             return JsonResponse({'error': 'Not authenticated'}, status=401)
         
