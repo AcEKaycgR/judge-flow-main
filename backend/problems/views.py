@@ -139,17 +139,23 @@ def submit_pending_question(request):
             if not test_cases:
                 return JsonResponse({'error': 'At least one test case is required'}, status=400)
 
+            cleaned_test_cases = []
             for i, test_case in enumerate(test_cases):
                 if 'input' not in test_case or 'expectedOutput' not in test_case:
                     return JsonResponse({'error': f'Test case {i+1} must have both input and expected output'}, status=400)
+                cleaned_test_cases.append({
+                    'input': test_case['input'],
+                    'expected_output': test_case['expectedOutput'],
+                    'isHidden': test_case.get('isHidden', False)
+                })
 
-            # Create pending question with test cases data
+            # Create pending question with cleaned test cases data
             pending_question = PendingQuestion.objects.create(
                 title=title,
                 description=description,
                 difficulty=difficulty,
                 constraints=constraints,
-                test_cases_data=test_cases,  # Store test cases data
+                test_cases_data=cleaned_test_cases,  # Store cleaned test cases data
                 created_by=request.user
             )
             
@@ -229,7 +235,7 @@ def approve_pending_question(request, question_id):
                     TestCase.objects.create(
                         problem=problem,
                         input_data=test_case_data['input'],
-                        expected_output=test_case_data['expectedOutput'],
+                        expected_output=test_case_data['expected_output'],
                         is_hidden=test_case_data.get('isHidden', False)
                     )
             
