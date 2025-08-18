@@ -90,12 +90,10 @@ def user_logout(request):
         # For JWT, logout is handled client-side by deleting the token
         return JsonResponse({'success': True})
 
-@csrf_exempt
 def user_profile(request):
     if request.method == 'GET':
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-        
+        # With JWT authentication, DRF will handle authentication
+        # We can safely access request.user here
         user = request.user
         return JsonResponse({
             'user': {
@@ -106,15 +104,15 @@ def user_profile(request):
             }
         })
 
-@csrf_exempt
 def dashboard_data(request):
     if request.method == 'GET':
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
+        # With JWT authentication, DRF will handle authentication
+        # We can safely access request.user here
+        user = request.user
         
         # Get user stats
-        total_submissions = Submission.objects.filter(user=request.user).count()
-        accepted_submissions = Submission.objects.filter(user=request.user, status='accepted').count()
+        total_submissions = Submission.objects.filter(user=user).count()
+        accepted_submissions = Submission.objects.filter(user=user, status='accepted').count()
         
         # Calculate accuracy
         accuracy = 0
@@ -134,7 +132,7 @@ def dashboard_data(request):
         
         # Get problem stats
         total_problems = Problem.objects.count()
-        solved_problems = Submission.objects.filter(user=request.user, status='accepted').values('problem').distinct().count()
+        solved_problems = Submission.objects.filter(user=user, status='accepted').values('problem').distinct().count()
         
         data = {
             'stats': {

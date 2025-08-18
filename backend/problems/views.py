@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth.models import User
 import json
@@ -52,41 +51,32 @@ def problems_list(request):
 @csrf_exempt
 def problem_detail(request, problem_id):
     if request.method == 'GET':
-        # Try to get approved problem first
         try:
-            problem = get_object_or_404(Problem, id=problem_id)
-            
-            # Get only the shown test cases (where is_hidden is False)
-            shown_test_cases = problem.test_cases.filter(is_hidden=False)
-            
+            problem = Problem.objects.get(id=problem_id)
             problem_data = {
                 'id': problem.id,
                 'title': problem.title,
                 'description': problem.description,
                 'difficulty': problem.difficulty,
-                'constraints': problem.constraints,
                 'tags': [tag.name for tag in problem.tags.all()],
-                'test_cases': [
-                    {
-                        'input_data': test_case.input_data,
-                        'expected_output': test_case.expected_output
-                    }
-                    for test_case in shown_test_cases
-                ],
-                'is_pending': False,  # Regular problems are not pending
+                'constraints': problem.constraints,
+                'test_cases': []
             }
             
+            # Only include non-hidden test cases for display
+            test_cases = problem.test_cases.filter(is_hidden=False)
+            for test_case in test_cases:
+                problem_data['test_cases'].append({
+                    'input_data': test_case.input_data,
+                    'expected_output': test_case.expected_output,
+                })
+            
             return JsonResponse({'problem': problem_data})
-        except:
+        except Problem.DoesNotExist:
             return JsonResponse({'error': 'Problem not found'}, status=404)
 
-@csrf_exempt
 def user_submissions(request):
     if request.method == 'GET':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-            
         submissions = Submission.objects.filter(user=request.user).select_related('problem').order_by('-submitted_at')
         
         submissions_data = []
@@ -103,13 +93,8 @@ def user_submissions(request):
         
         return JsonResponse({'submissions': submissions_data})
 
-@csrf_exempt
 def submission_detail(request, submission_id):
     if request.method == 'GET':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-            
         submission = get_object_or_404(Submission, id=submission_id, user=request.user)
         
         submission_data = {
@@ -127,27 +112,38 @@ def submission_detail(request, submission_id):
         
         return JsonResponse({'submission': submission_data})
 
-@csrf_exempt
 def submit_pending_question(request):
     if request.method == 'POST':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
+        data = json.loads(request.body)
+        title = data.get('title')
+        description = data.get('description')
+        difficulty = data.get('difficulty', 'easy')
+        constraints = data.get('constraints', '')
+        tags = data.get('tags', [])
+        test_cases = data.get('test_cases', [])
+        
+        # Validate required fields
+        if not title or not description:
+            return JsonResponse({'error': 'Title and description are required'}, status=400)
         
         try:
-            data = json.loads(request.body)
-            title = data.get('title')
-            description = data.get('description')
-            difficulty = data.get('difficulty')
-            constraints = data.get('constraints', '')
-            tag_names = data.get('tags', [])
-            test_cases = data.get('test_cases', [])
+            # Create pending question
+            pending_question = PendingQuestion.objects.create(
+                title=title,
+                description=description,
+                difficulty=difficulty,
+                constraints=constraints,
+                created_by=request.user
+            )
             
-            if not title or not description or not difficulty:
-                return JsonResponse({'error': 'Title, description, and difficulty are required'}, status=400)
-                
-            # Validate that at least one test case is provided
-            if not test_cases or len(test_cases) == 0:
+            # Handle tags
+            tag_names = [tag.strip() for tag in tags if tag.strip()]
+            for tag_name in tag_names:
+                tag, created = Tag.objects.get_or_create(name=tag_name)
+                pending_question.tags.add(tag)
+            
+            # Validate and store test cases
+            if not test_cases:
                 return JsonResponse({'error': 'At least one test case is required'}, status=400)
                 
             # Validate test cases
@@ -181,13 +177,8 @@ def submit_pending_question(request):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-@csrf_exempt
 def pending_questions_list(request):
     if request.method == 'GET':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-        
         # Check if user is admin
         if not request.user.is_staff:
             return JsonResponse({'error': 'Access denied'}, status=403)
@@ -202,15 +193,13 @@ def pending_questions_list(request):
         elif approved == 'false':
             pending_questions = pending_questions.filter(is_approved=False)
         
-        # Serialize pending questions
-        questions_data = []
+        pending_questions_data = []
         for question in pending_questions:
-            questions_data.append({
+            pending_questions_data.append({
                 'id': question.id,
                 'title': question.title,
                 'description': question.description,
                 'difficulty': question.difficulty,
-                'constraints': question.constraints,
                 'tags': [tag.name for tag in question.tags.all()],
                 'created_by': question.created_by.username,
                 'created_at': question.created_at.isoformat(),
@@ -218,17 +207,10 @@ def pending_questions_list(request):
                 'test_cases_count': len(question.test_cases_data) if question.test_cases_data else 0,
             })
         
-        return JsonResponse({'questions': questions_data})
-    
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
+        return JsonResponse({'pending_questions': pending_questions_data})
 
-@csrf_exempt
 def approve_pending_question(request, question_id):
     if request.method == 'POST':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-        
         # Check if user is admin
         if not request.user.is_staff:
             return JsonResponse({'error': 'Access denied'}, status=403)
@@ -237,17 +219,17 @@ def approve_pending_question(request, question_id):
             # Get the pending question
             pending_question = get_object_or_404(PendingQuestion, id=question_id)
             
-            # Create a new Problem from the pending question
+            # Create the actual problem
             problem = Problem.objects.create(
                 title=pending_question.title,
                 description=pending_question.description,
                 difficulty=pending_question.difficulty,
-                constraints=pending_question.constraints
+                constraints=pending_question.constraints,
+                created_by=pending_question.created_by
             )
             
-            # Copy tags
-            for tag in pending_question.tags.all():
-                problem.tags.add(tag)
+            # Add tags
+            problem.tags.set(pending_question.tags.all())
             
             # Create test cases if they exist
             if pending_question.test_cases_data:
@@ -269,13 +251,8 @@ def approve_pending_question(request, question_id):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-@csrf_exempt
 def reject_pending_question(request, question_id):
     if request.method == 'POST':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-        
         # Check if user is admin
         if not request.user.is_staff:
             return JsonResponse({'error': 'Access denied'}, status=403)
@@ -291,13 +268,8 @@ def reject_pending_question(request, question_id):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-@csrf_exempt
 def delete_problem(request, problem_id):
     if request.method == 'DELETE':
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
-            return JsonResponse({'error': 'Not authenticated'}, status=401)
-        
         # Check if user is admin
         if not request.user.is_staff:
             return JsonResponse({'error': 'Access denied'}, status=403)

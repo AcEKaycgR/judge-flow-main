@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
 import json
 import subprocess
 import tempfile
@@ -148,8 +147,6 @@ def run_cpp_code(code, input_data):
             pass
         return {'output': str(e), 'error': True}
 
-@csrf_exempt
-@login_required
 def submit_solution(request):
     if request.method == 'POST':
         data = json.loads(request.body)

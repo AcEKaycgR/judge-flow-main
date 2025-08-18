@@ -306,7 +306,6 @@ analyzer = GeminiCodeAnalyzer()
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@csrf_exempt
 def comprehensive_ai_review(request):
     """
     Get a comprehensive AI review of the user's coding progress and performance.
@@ -469,7 +468,6 @@ def comprehensive_ai_review(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@csrf_exempt
 def problem_ai_review(request, problem_id):
     """
     Get AI review for a specific problem submission.
@@ -568,7 +566,6 @@ def problem_ai_review(request, problem_id):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@csrf_exempt
 def user_progress(request):
     """
     Get user progress data for visualization.
