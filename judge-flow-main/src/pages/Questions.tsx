@@ -158,13 +158,19 @@ export default function Questions() {
     try {
       const tags = newQuestion.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
       
+      const cleaned_test_cases = testCases.map(tc => ({
+        input_data: tc.input,
+        expected_output: tc.expectedOutput,
+        is_hidden: tc.isHidden
+      }));
+
       await submitPendingQuestion({
         title: newQuestion.title,
         description: newQuestion.description,
         difficulty: newQuestion.difficulty,
         constraints: newQuestion.constraints,
         tags: tags,
-        test_cases: testCases
+        test_cases: cleaned_test_cases
       });
       
       toast.success('Question submitted successfully! It will appear once approved.');

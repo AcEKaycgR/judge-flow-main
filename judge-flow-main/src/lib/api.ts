@@ -352,9 +352,9 @@ export const submitPendingQuestion = async (data: {
   constraints?: string;
   tags?: string[];
   test_cases?: {
-    input: string;
-    expectedOutput: string;
-    isHidden: boolean;
+    input_data: string;
+    expected_output: string;
+    is_hidden: boolean;
   }[];
 }) => {
   const response = await authenticatedRequest(`${API_BASE_URL}/problems/submit-pending-question/`, {
