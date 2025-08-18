@@ -345,6 +345,30 @@ export const getProblem = async (id: number): Promise<{ problem: Problem }> => {
   return response.json();
 };
 
+export const submitPendingQuestion = async (data: {
+  title: string;
+  description: string;
+  difficulty: string;
+  constraints?: string;
+  tags?: string[];
+  test_cases?: {
+    input: string;
+    expectedOutput: string;
+    isHidden: boolean;
+  }[];
+}) => {
+  const response = await authenticatedRequest(`${API_BASE_URL}/problems/submit-pending-question/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to submit question');
+  }
+  
+  return response.json();
+};
+
 export const getPendingQuestions = async (params?: { approved?: string }) => {
   const queryParams = new URLSearchParams();
   if (params?.approved) queryParams.append('approved', params.approved);
