@@ -1,6 +1,8 @@
 // Utility function to get access token from sessionStorage
 function getAccessToken(): string | null {
-  return sessionStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('accessToken');
+  console.log('Getting access token from sessionStorage:', !!token);
+  return token;
 }
 
 // Utility function to refresh access token
@@ -45,20 +47,36 @@ async function authenticatedRequest(url: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
+  // Debug logging
+  console.log('Making authenticated request to:', url);
+  console.log('Access token available:', !!accessToken);
+  if (accessToken) {
+    console.log('Authorization header set');
+  }
+
   let response = await fetch(url, {
     ...options,
     headers,
   });
 
+  // Debug logging
+  console.log('Response status:', response.status);
+  console.log('Response headers:', [...response.headers.entries()]);
+
   // If unauthorized, try to refresh token and retry
   if (response.status === 401 && accessToken) {
+    console.log('Received 401, trying to refresh token');
     const newToken = await refreshAccessToken();
     if (newToken) {
+      console.log('Token refreshed successfully');
       headers['Authorization'] = `Bearer ${newToken}`;
       response = await fetch(url, {
         ...options,
         headers,
       });
+      console.log('Retry response status:', response.status);
+    } else {
+      console.log('Token refresh failed');
     }
   }
 
@@ -224,8 +242,11 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
   
   // Store tokens if login was successful
   if (result.success && result.tokens) {
+    console.log('Storing tokens in sessionStorage');
     sessionStorage.setItem('accessToken', result.tokens.access);
     sessionStorage.setItem('refreshToken', result.tokens.refresh);
+    console.log('Access token stored:', !!sessionStorage.getItem('accessToken'));
+    console.log('Refresh token stored:', !!sessionStorage.getItem('refreshToken'));
   }
   
   return result;
