@@ -19,7 +19,7 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js for JavaScript code execution
+# Install Node.js for JavaScript code execution (if needed by your app)
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -31,11 +31,15 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 # Copy project
 COPY . /app/
 
-# Collect static files
+# Collect static files (safe to run at build time too)
 RUN python manage.py collectstatic --noinput
+
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run the application using Gunicorn
-CMD ["gunicorn", "judgeflow.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Run the entrypoint script
+CMD ["/app/entrypoint.sh"]
